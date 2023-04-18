@@ -1,0 +1,29 @@
+
+int i = 0;
+
+i = 20 + 30;
+
+bool lk = i < 9 or false and (0==0 or "p"=="k") and true;
+
+string x = "oi";list l = {2,"OLA"} ;
+
+int[10] x = [1,1,1,2,3];
+
+x = cons(l);
+
+def Fibonacci(n){
+    if (n < 0){
+        int x = print("Incorrect input");
+    }
+    elif (n == 0){
+        int ret = 0;
+        return ret;
+    }
+    elif n == 1 or n == 2{
+        return 1;
+    }
+    else{
+        return Fibonacci(n-1) + Fibonacci(n-2);   
+    }
+
+}
