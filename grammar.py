@@ -1,18 +1,27 @@
 grammar = """
-start: componente+
-componente: decl ";" 
+start: code+
+code: decl 
     | instr
 
-decl: tipo? VAR "=" express
+decl: declvar ";"
+    | declfun
+
+declvar: tipo? VAR "=" express
+       | tipo VAR
+
+declfun: "def" VAR "(" argsdef? ")" "{" (code|return)+  "}"
+       | tipo  VAR "(" argsdef? ")" "{" (code|return)+  "}"
+
+argsdef: argdef ("," argdef)*
+argdef: tipo? VAR
 
 instr: if
      | while
      | dowhile
      | for
      | switch
-     | dfunc
      | func ";"
-  
+
 express: VAR
     | func
     | string
@@ -21,11 +30,9 @@ express: VAR
     | tuple
     | elem
     | expnum
-    | bool
+    | BOOL
+    | condition
 
-
-dfunc: "def" VAR "(" argsdef? ")" "{" componente+ return? "}"
-    | "def" VAR "(" argsdef? ")" "{" componente* return "}"
 func: funcname "(" args? ")"
 
 funcname: "read"
@@ -36,9 +43,6 @@ funcname: "read"
         | "in" 
         | "tail"
         | VAR
-
-argsdef: argdef ("," argdef)*
-argdef: VAR
 
 args: arg ("," arg)*
 arg: express
@@ -55,12 +59,11 @@ dowhile: "do" content "while" condition
 
 for: "for" VAR "in" range content
 
-content: "{" componente* "}"
+content: "{" (code|return)* "}"
 
-range: array
-    | list
-    | func
-    | range_explicit 
+range: iterable
+     | func
+     | range_explicit 
 
 range_explicit: "[" NUMBER ".." NUMBER "]"
 
@@ -68,9 +71,6 @@ range_explicit: "[" NUMBER ".." NUMBER "]"
 switch: "switch" VAR case+ default*
 case: "case" express content 
 default: "default" content 
-
-elems: express ("," express)*
-
 
 expnum: expnum LPOP term
     | term
@@ -93,23 +93,38 @@ cond: cond "or" cond2
 cond2: cond2 "and" cond3
     | cond3
 
-cond3: "not" comp
+cond3: "not" cond4
+    | cond4
+
+cond4: "(" cond ")"
     | comp
-    | bool
+    | BOOL
 
 comp: express COP express
 
 
-tipo: "int" | "bool" | "string" | darray | "list" | "tuple"
-darray: tipo "[" NUMBER "]"
+tipo: INT | BOOL | STRING | darray | LIST | TUPLE
+darray: tipo "[" NUMBER? "]"
 
+
+INT: "int"
+BOOL: "true" | "false"
+STRING: "string"
 LIST: "list"
-TUPLO: "tuple"
+TUPLE: "tuple"
+
+
+iterable: string
+        | array
+        | list
+        | tuple
+
 string: ESCAPED_STRING
-bool: "true" | "false"
 array: "[" elems? "]"
 list: "{" elems? "}"
 tuple: "(" elems?")"
+
+elems: express ("," express)*
 
 elem: VAR "[" NUMBER "]"
 
@@ -126,7 +141,7 @@ HPOP: "*"
 
 COP: ">"
     | "<"
-    | "=<"
+    | "<="
     | ">="
     | "=="
     | "!="
