@@ -3,6 +3,9 @@ start: code+
 code: decl 
     | instr
 
+code2: declvar ";"
+     | instr
+
 decl: declvar ";"
     | declfun
 
@@ -10,7 +13,6 @@ declvar: tipo? VAR "=" express
        | tipo VAR
 
 declfun: "def" VAR "(" argsdef? ")" "{" (code|return)+  "}"
-       | tipo  VAR "(" argsdef? ")" "{" (code|return)+  "}"
 
 argsdef: argdef ("," argdef)*
 argdef: tipo? VAR
@@ -59,7 +61,7 @@ dowhile: "do" content "while" condition
 
 for: "for" VAR "in" range content
 
-content: "{" (code|return)* "}"
+content: "{" (code2|return)* "}"
 
 range: iterable
      | func
