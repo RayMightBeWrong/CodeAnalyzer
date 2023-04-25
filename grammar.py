@@ -55,9 +55,9 @@ arg: express
 
 return: "return" express ";"
 
-if: "if" condition content elif* else?
-elif: "elif" condition content 
-else: "else" content 
+ifcond: "if" condition content elif* else?
+elifcond: "elif" condition content 
+elsecond: "else" content 
 
 whileloop: "while" condition content
 
