@@ -17,25 +17,25 @@ declfun: "def" VAR "(" argsdef? ")" content
 argsdef: argdef ("," argdef)*
 argdef: tipo? VAR
 
-instr: if
+instr: ifcond
      | whileloop
      | dowhile
      | forloop
      | switch
      | func ";"
 
-express: func
-    | string
-    | array
-    | list
-    | tuple
-    | elem
-    | bool
-    | expnum
-    | condition
-    | express2
+express : bool
+        | func
+        | string
+        | array
+        | list
+        | tuple
+        | elem
+        | express2
+        | expnum
+        | condition
 
-express2: VAR
+express2.8: VAR
 
 func: funcname "(" args? ")"
 
@@ -55,7 +55,7 @@ arg: express
 
 return: "return" express ";"
 
-ifcond: "if" condition content elif* else?
+ifcond: "if" condition content elifcond* elsecond?
 elifcond: "elif" condition content 
 elsecond: "else" content 
 
@@ -73,12 +73,11 @@ range: iterable
 
 range_explicit: "[" NUMBER ".." NUMBER "]"
 
+switch: "switch" VAR case+ default?
+case: "case" express content
+default: "default" content
 
-switch: "switch" VAR case+ default*
-case: "case" express content 
-default: "default" content 
-
-expnum: expnum LPOP term
+expnum.4: expnum LPOP term
     | term
 
 term: term HPOP factor
@@ -135,11 +134,11 @@ string: ESCAPED_STRING
 array: "[" elems? "]"
 list: "{" elems? "}"
 tuple: "(" elems?")"
-bool : TRUE | FALSE
+bool.10: TRUE | FALSE
 
 
-TRUE: "true"
-FALSE: "false"
+TRUE.10: "true"
+FALSE.10: "false"
 
 elems: express ("," express)*
 

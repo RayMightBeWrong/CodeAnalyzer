@@ -8,16 +8,16 @@ from lark.exceptions import UnexpectedCharacters,UnexpectedEOF,UnexpectedInput,U
 from grammar import grammar
 from html_creator import html_builder
 
-
-#TODO: Hierarqy of contexts
-#DONE: TypeCount
-
+#TODO: Refactor no codigo para reduzir redundancia
+#TODO: Marcação de utilização de variaveis
+#TODO: Marcação de erros nas operações de calculo de expressoes
+#TODO: Testes
 
 class analyzer(Interpreter):
+    
     def __init__(self) :
         self.typeCount  = {"attr":0,"read":0,"write":0,"cond":0,"cycle":0}
         self.instrCount = 0
-
         self.contextTree= {"global":{}}    # Tree Structure for context evaluation
         self.declVar    = {"global":{}}    # Dictionary of variables based on context
         self.declFun    = {}               # Defined functions
@@ -25,13 +25,24 @@ class analyzer(Interpreter):
         self.undecl     = []               # List of undeclared variable/function
         self.warnings   = []               # General warnings list
         self.errors     = []               # List of errors
-        self.contextStk    = ["global"]    # Current stack context
-
+        self.contextStk = ["global"]       # Current stack context
 
     def start(self,tree):
-        self.visit_children(tree)
+        print(self.visit_children(tree))
         print(vars(self))
-        
+
+    def code(self,tree):
+       c = self.visit_children(tree)
+       return c[0]
+    
+    def code2(self,tree):
+       c = self.visit_children(tree)
+       return c[0]
+       
+    def instr(self,tree):
+       c = self.visit_children(tree)
+       return c[0]
+
     def declvar(self,tree):
         tipo=""
         ## 1. Recognize if it is a declaration, an assingment or booth
@@ -78,7 +89,7 @@ class analyzer(Interpreter):
 
               self.unused[self.contextStk[-1]+ name] = vars(tree.meta)
 
-        return tree
+        return {"dclVar":{"decl":decl,"assign":assignment,"type":tipo,"value":value}}
 
     def declfun(self,tree):
         name =tree.children[0].value
@@ -88,7 +99,7 @@ class analyzer(Interpreter):
         if name in self.declFun:
             self.errors.append({
                   "errorMsg": "Redeclaration of function",
-                  "meta": vars(tree.meta) 
+                  "meta": vars(tree.meta)
             })
             return tree
         else:     
@@ -104,7 +115,7 @@ class analyzer(Interpreter):
             # Return to previous context
             self.contextStk.pop(-1)
           
-        return tree
+        return tree       
 
     def argsdef(self,tree):
         c = self.visit_children(tree)
@@ -137,7 +148,6 @@ class analyzer(Interpreter):
         return c[0] if not isinstance(c[0],Token) else c[0].value
     
     def express(self,tree):
-        print(tree)
         c = self.visit_children(tree)
         if len(c) == 1:
             return c[0]
@@ -171,7 +181,6 @@ class analyzer(Interpreter):
             elif c[1] == "/":
                 if isinstance(c[0],int) and isinstance(c[2],int):
                     return c[0] / c[2]
-
             elif c[1] == "%":
                 if isinstance(c[0],int) and isinstance(c[2],int):
                     return c[0] % c[2]
@@ -256,19 +265,92 @@ class analyzer(Interpreter):
     
     def whileloop(self,tree):
       self.typeCount["cycle"]+=1
-      c = self.visit_children(tree)
-      return c
+      condition = self.visit(tree.children[0])
+      node=self.contextTree
+      for contxt in self.contextStk:
+        node= node[contxt]
+      node["wloop"+self.typeCount["cycle"]]={}
+      self.contextStk.append("wloop"+self.typeCount["cycle"])
+      content =  self.visit(tree.children[1])
+      self.contextStk.pop(-1)
+      return {"wloop"+self.typeCount["cycle"]:{"cond":condition, "content":content}}
       
     def forloop(self,tree):
-      #TODO: Change the scope of the for loop variable
       self.typeCount["cycle"]+=1
-      c = self.visit_children(tree)
-      return c
+      
+      #TODO:Create a var
+      iterator = self.visit(tree.children[0])
+      
+      #TODO: range treatment
+      range = self.visit(tree.children[1])
+
+      node=self.contextTree
+      for contxt in self.contextStk:
+        node= node[contxt]
+      node["floop"+self.typeCount["cycle"]]={}
+      self.contextStk.append("floop"+self.typeCount["cycle"])
+      content =  self.visit(tree.children[2])
+      self.contextStk.pop(-1)
+      return {"floop"+self.typeCount["cycle"]:{"range":range, "content":content}}
+      
+    def range(self,tree):
+      pass
+
+    def range_explicit(self,tree):
+      if tree.children[0] > tree.children[1]:
+        self.errors.append({
+            "errorMsg": "Invalid range",
+            "meta": vars(tree.meta)
+        })
 
     def dowhile(self,tree):
       self.typeCount["cycle"]+=1
-      c = self.visit_children(tree)
-      return c
+      condition = self.visit(tree.children[1])
+      node=self.contextTree
+      for contxt in self.contextStk:
+        node= node[contxt]
+      node["dwloop"+self.typeCount["cycle"]]={}
+      self.contextStk.append("dwloop"+self.typeCount["cycle"])
+      content =  self.visit(tree.children[0])
+      self.contextStk.pop(-1)
+      return {"dwloop"+self.typeCount["cycle"]:{"cond":condition, "content":content}}
+    
+    def ifcond(self,tree):
+      condition = self.visit(tree.children[0])
+      node=self.contextTree
+      for contxt in self.contextStk:
+        node= node[contxt]
+      node["ifcond"+str(self.typeCount["cond"])]={}
+      self.contextStk.append("ifcond"+str(self.typeCount["cond"]))
+      content =  self.visit(tree.children[1])
+      self.contextStk.pop(-1)
+      elses=[]
+      for i in range(2,len(tree.children)):
+           elses.append(self.visit(tree.children[i]))
+      
+      return {"if":{"cond":condition, "content":content, "elses":elses}}
+    
+    def elifcond(self,tree):
+      condition = self.visit(tree.children[0])
+      node=self.contextTree
+      for contxt in self.contextStk:
+        node= node[contxt]
+      node["elif"+str(self.typeCount["cond"])]={}
+      self.contextStk.append("elif"+str(self.typeCount["cond"]))
+      content =  self.visit(tree.children[1])
+      self.contextStk.pop(-1)
+     
+      return {"elif":{"cond":condition, "content":content}}
+
+    def elsecond(self,tree):
+      node=self.contextTree
+      for contxt in self.contextStk:
+        node= node[contxt]
+      node["elif"+str(self.typeCount["cond"])]={}
+      self.contextStk.append("elif"+str(self.typeCount["cond"]))
+      content =  self.visit(tree.children[1])
+      self.contextStk.pop(-1)
+      return {"else":{"content":content}}
     
     def funcname(self,tree):
       c = self.visit_children(tree)
@@ -278,14 +360,44 @@ class analyzer(Interpreter):
         self.typeCount["read"]+=1
 
       return c[0]
+    
+    def switch(self,tree):
+      #TODO:Use a var
+      var = tree.children[0].value
+      cases=[]
+      for i in range(1,len(tree.children)-1):
+        cases.append(self.visit(tree.children[i]))
 
-    def range_explicit(self,tree):
-      if tree.children[0] > tree.children[1]:
-        self.errors.append({
-            "errorMsg": "Invalid range",
-            "meta": vars(tree.meta)
-        })
+      default={}
+      if (tree.children[-1].data == "case"):
+         
+         cases.append(self.visit(tree.children[-1]))
+      else:
+         default=self.visit(tree.children[-1])
+      
+      return {"switch":{"var":var,"cases":cases,"default":default}}       
 
+    def case(self,tree):
+      expression = self.visit(tree.children[0])
+      node=self.contextTree
+      for contxt in self.contextStk:
+        node= node[contxt]
+      node["casecond"+str(self.typeCount["cond"])]={}
+      self.contextStk.append("casecond"+str(self.typeCount["cond"]))
+      content =  self.visit(tree.children[1])
+      self.contextStk.pop(-1)
+      return {"case":{"expression":expression, "content":content}}
+    
+    def default(self,tree):
+      node=self.contextTree
+      for contxt in self.contextStk:
+        node= node[contxt]
+      node["defcond"+str(self.typeCount["cond"])]={}
+      self.contextStk.append("defcond"+str(self.typeCount["cond"]))
+      content =  self.visit(tree.children[0])
+      self.contextStk.pop(-1)
+      return {"default":{"content":content}}
+    
     def bool(self,tree):
       c = self.visit_children(tree)
       return c[0]=="true"
