@@ -12,7 +12,7 @@ decl: declvar ";"
 declvar: tipo? VAR "=" express
        | tipo VAR
 
-declfun: "def" VAR "(" argsdef? ")" "{" content  "}"
+declfun: "def" VAR "(" argsdef? ")" content
 
 argsdef: argdef ("," argdef)*
 argdef: tipo? VAR
@@ -30,10 +30,12 @@ express: func
     | list
     | tuple
     | elem
+    | bool
     | expnum
-    | BOOL
     | condition
-    | VAR
+    | express2
+
+express2: VAR
 
 func: funcname "(" args? ")"
 
@@ -102,7 +104,7 @@ cond3: "not" cond4
 
 cond4: "(" cond ")"
     | comp
-    | BOOL
+    | bool
 
 comp: express COP express
 
@@ -110,9 +112,8 @@ comp: express COP express
 tipo: INT | BOOL | STRING | darray | LIST | TUPLE
 darray: tipo "[" NUMBER? "]"
 
-
+BOOL: "bool"
 INT: "int"
-BOOL: "true" | "false"
 STRING: "string"
 LIST: "list"
 TUPLE: "tuple"
@@ -134,6 +135,11 @@ string: ESCAPED_STRING
 array: "[" elems? "]"
 list: "{" elems? "}"
 tuple: "(" elems?")"
+bool : TRUE | FALSE
+
+
+TRUE: "true"
+FALSE: "false"
 
 elems: express ("," express)*
 

@@ -3,6 +3,7 @@
 from lark import Lark,Token,Tree
 from lark import Discard
 from lark.visitors import Interpreter
+from lark.exceptions import UnexpectedCharacters,UnexpectedEOF,UnexpectedInput,UnexpectedToken
 
 from grammar import grammar
 from html_creator import html_builder
@@ -14,15 +15,17 @@ from html_creator import html_builder
 
 class analyzer(Interpreter):
     def __init__(self) :
-        self.typeCount={"attr":0,"read":0,"write":0,"cond":0,"cycle":0}
-        self.declVar = {"global":{}}
-        self.declFun = {}
-        self.unused  = {}
-        self.redecl  = {}
-        self.undecl  = {}
-        self.warnings= []
-        self.errors  = []
-        self.context = "global"
+        self.typeCount  = {"attr":0,"read":0,"write":0,"cond":0,"cycle":0}
+        self.instrCount = 0
+
+        self.contextTree= {"global":{}}    # Tree Structure for context evaluation
+        self.declVar    = {"global":{}}    # Dictionary of variables based on context
+        self.declFun    = {}               # Defined functions
+        self.unused     = {}               # List of unused variable/function warnings
+        self.undecl     = []               # List of undeclared variable/function
+        self.warnings   = []               # General warnings list
+        self.errors     = []               # List of errors
+        self.contextStk    = ["global"]    # Current stack context
 
 
     def start(self,tree):
@@ -30,51 +33,77 @@ class analyzer(Interpreter):
         print(vars(self))
         
     def declvar(self,tree):
-        index = 0
         tipo=""
-        
-        # If the first children is a Tree, it means it is a "tipo"
-        if isinstance(tree.children[index],Tree):
-            tipo = self.visit(tree.children[index])
-            index+=1
+        ## 1. Recognize if it is a declaration, an assingment or booth
+        decl=False
+        assignment=False
+        #If the first children is a Tree, it means it is a declaration
+        if isinstance(tree.children[0],Tree):
+            tipo = self.visit(tree.children[0])
+            decl = True
 
-        name = tree.children[index].value
-        index+=1
-        value = self.visit(tree.children[index])
+        #If the last children is a tree then it is an assingment
+        if isinstance(tree.children[-1],Tree):
+            value = self.visit(tree.children[-1])
+            assignment=True
         
-        #TODO: Check for redeclaration
-        #TODO: Check for attr
-        self.declVar[self.context][name]={
-            "tipo":tipo,
-            "value":value
-        }
-        self.unused[name]={
-          "meta": vars(tree.meta)
-        }
+        ##2. Check for context errors
+        if not decl:
+          name = tree.children[0].value
+          search = False
+          definedIn = ""
+          for context in self.contextStk:
+              if name in self.declFun[context]:
+                definedIn = context
+                search=True
+
+          if not search:
+            #If it wasnt found, declare it as undefined
+            self.undecl[self.context[-1]+ name] = vars(tree.meta)
+          else:
+            # If it was, add its new value to the stack
+            # TODO: If it as a type, we could check if is a valid assignment
+            self.declVar[definedIn][name]["value"].append(value)
+        
+        else:
+          name = tree.children[1].value
+          if name in self.declVar[self.contextStk[-1]]:
+              #Already defined
+              self.errors.append({"errorMsg":"Already defined it current context", "meta":vars(tree.meta)})
+          else:
+              # Not defined nor used
+              # TODO: If it as a type, we could check if is a valid assignment
+              if assignment: self.declVar[self.contextStk[-1]] = {"type":tipo,"value":[value]}
+              else: self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":[]}
+
+              self.unused[self.contextStk[-1]+ name] = vars(tree.meta)
+
+        return tree
 
     def declfun(self,tree):
         name =tree.children[0].value
         args =tree.children[1]
         args= self.visit_children(args)
         
-        #Verify if it is a redeclaration of a fun, with same len of args
         if name in self.declFun:
-          if len(self.declFun[name]["args"]) ==  len(args):
             self.errors.append({
-              "errorMsg": "Redeclaration of function",
-              "meta": vars(tree.meta) 
+                  "errorMsg": "Redeclaration of function",
+                  "meta": vars(tree.meta) 
             })
-          else:      
+            return tree
+        else:     
+            # Create contexts and func
+            self.contextStk.append(name)
+            self.contextTree["global"][name]={}
+            
             self.declFun[name]={
                 "args":args
             }
-            self.context=name
-            self.declVar[self.context]={}
-            
+            #Visit code
             self.visit(tree.children[2])
-            
-            self.context="global"
-      
+            # Return to previous context
+            self.contextStk.pop(-1)
+          
         return tree
 
     def argsdef(self,tree):
@@ -108,6 +137,7 @@ class analyzer(Interpreter):
         return c[0] if not isinstance(c[0],Token) else c[0].value
     
     def express(self,tree):
+        print(tree)
         c = self.visit_children(tree)
         if len(c) == 1:
             return c[0]
@@ -199,10 +229,8 @@ class analyzer(Interpreter):
 
     def cond4(self,tree):
         c = self.visit_children(tree)
-        if isinstance(c[0],Token) and c[0].type=="BOOL": 
-            return c[0].value=="true"
-        else:
-          return c[0]
+
+        return c
          
     def comp(self,tree):
         c = self.visit_children(tree)
@@ -258,11 +286,13 @@ class analyzer(Interpreter):
             "meta": vars(tree.meta)
         })
 
-    #These dont work for some reason
-    def BOOL(self,bool):
-      return bool.value=="true"
+    def bool(self,tree):
+      c = self.visit_children(tree)
+      return c[0]=="true"
 
+    # These dont work for some reason
     def NUMBER(self,number):
+      print("OIII")
       return int(number.value)
     
     def VAR(sel,var):
@@ -278,6 +308,6 @@ while(True):
   try:
     parse_tree = p.parse(file)
     data = analyzer().visit(parse_tree)
-  except:
+  except [UnexpectedToken,UnexpectedInput,UnexpectedEOF,UnexpectedCharacters] :
     print("error in grammar")
   print("\n\n")
