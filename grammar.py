@@ -12,20 +12,19 @@ decl: declvar ";"
 declvar: tipo? VAR "=" express
        | tipo VAR
 
-declfun: "def" VAR "(" argsdef? ")" "{" (code|return)+  "}"
+declfun: "def" VAR "(" argsdef? ")" "{" content  "}"
 
 argsdef: argdef ("," argdef)*
 argdef: tipo? VAR
 
 instr: if
-     | while
+     | whileloop
      | dowhile
-     | for
+     | forloop
      | switch
      | func ";"
 
-express: VAR
-    | func
+express: func
     | string
     | array
     | list
@@ -34,17 +33,20 @@ express: VAR
     | expnum
     | BOOL
     | condition
+    | VAR
 
 func: funcname "(" args? ")"
 
-funcname: "read"
-        | "write"
-        | "cons"
-        | "snoc"
-        | "head"
-        | "in" 
-        | "tail"
-        | VAR
+funcname: READ
+        | WRITE
+        | CONS
+        | SNOC
+        | HEAD
+        | IN
+        | TAIL
+        | WORD
+
+
 
 args: arg ("," arg)*
 arg: express
@@ -55,11 +57,11 @@ if: "if" condition content elif* else?
 elif: "elif" condition content 
 else: "else" content 
 
-while: "while" condition content
+whileloop: "while" condition content
 
 dowhile: "do" content "while" condition
 
-for: "for" VAR "in" range content
+forloop: "for" VAR "in" range content
 
 content: "{" (code2|return)* "}"
 
@@ -115,6 +117,13 @@ STRING: "string"
 LIST: "list"
 TUPLE: "tuple"
 
+READ: "read"
+WRITE: "write"
+CONS: "cons"
+SNOC: "snoc"
+HEAD: "head"
+IN: "in"
+TAIL: "tail"
 
 iterable: string
         | array
