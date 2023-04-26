@@ -77,6 +77,7 @@ class analyzer(Interpreter):
         value=''
         ## 1. Recognize if it is a declaration, an assingment or booth
         decl=False
+        value=[]
         assignment=False
         #If the first children is a Tree, it means it is a declaration
         if isinstance(tree.children[0],Tree):
@@ -117,7 +118,7 @@ class analyzer(Interpreter):
               if not self.contextStk[-1] in self.declVar: self.declVar[self.contextStk[-1]]={}
               
               if assignment: self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":[value]}
-              else: self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":[]}
+              else: self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":value}
 
               self.unused[self.contextStk[-1]+ name] = vars(tree.meta)
 
@@ -133,22 +134,16 @@ class analyzer(Interpreter):
                   "errorMsg": "Redeclaration of function",
                   "meta": vars(tree.meta)
             })
-            return tree
         else:     
-            # Create contexts and func
-            self.contextStk.append(name)
-            self.contextTree["global"][name]={}
             
             self.declFun[name]={
                 "args":args
             }
-            #Visit code
-            self.visit(tree.children[2])
-            # Return to previous context
-            self.contextStk.pop(-1)
-          
-        return tree       
 
+            content = self.vstContentAux(tree.children[2],name)
+          
+        return {"dclFun":{"name":name,"args":args,"content":content}}
+       
     def argsdef(self,tree):
         c = self.visit_children(tree)
         return c
@@ -324,9 +319,7 @@ class analyzer(Interpreter):
         #TODO: typecheck
       else:
          return self.visit(tree.children[0])[0]
-
-         
-        
+      
     def range_explicit(self,tree):
       if tree.children[0].value > tree.children[1].value:
         self.errors.append({
@@ -363,8 +356,7 @@ class analyzer(Interpreter):
     def darray(self,tree):
        c = self.visit_children(tree)
        return c
-       
-          
+           
     def dowhile(self,tree):
       self.typeCount["cycle"]+=1
       condition = self.visit(tree.children[1])
@@ -429,13 +421,12 @@ class analyzer(Interpreter):
       c = self.visit_children(tree)
       return c[0]=="true"
 
-    # These dont work for some reason
-    def NUMBER(self,number):
-      return int(number.value)
-    
-    def VAR(sel,var):
-      return var
-
+    def returnval(self,tree):
+       if self.contextStk[-1]== "global":
+          self.errors.append({"errorMsg":"Return in the global context", "meta":vars(tree.meta)})
+       else:
+          c = self.visit(tree.children[0])
+          return {"return": c}
 
 #Add argparser and flit maybe?
 
