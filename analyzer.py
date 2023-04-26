@@ -6,7 +6,6 @@ from lark.visitors import Interpreter
 from lark.exceptions import UnexpectedCharacters,UnexpectedEOF,UnexpectedInput,UnexpectedToken
 
 from grammar import grammar
-from html_creator import html_builder
 
 #TODO: Marcação de utilização de variaveis
 #TODO: Marcação de erros nas operações de calculo de expressoes
@@ -22,6 +21,7 @@ class analyzer(Interpreter):
         self.declFun    = {}               # Defined functions
         self.unused     = {}               # List of unused variable/function warnings
         self.undecl     = []               # List of undeclared variable/function
+        self.notInit    = []               # List of not initialized variable/function
         self.warnings   = []               # General warnings list
         self.errors     = []               # List of errors
         self.contextStk = ["global"]       # Current stack context
@@ -50,15 +50,27 @@ class analyzer(Interpreter):
       else:
           value= self.declVar[definedIn][var]["value"][-1] if len(self.declVar[definedIn][var]["value"])>0 else None
           type= self.declVar[definedIn][var]["type"]
+          if definedIn+var in self.unused: self.unused.pop(definedIn+var)
           if value==None:
-             self.warnings.append({"errorMsg":"Variable used, but no value attributed to it","meta":vars(tree.meta)})
+             self.notInit.append({"errorMsg":"Variable used, but no value attributed to it","meta":vars(tree.meta)})
           return type,value
-
       
     ## RULES
     def start(self,tree):
-        print(self.visit_children(tree),end="\n\n")
-        print(vars(self))
+        code =self.visit_children(tree)
+        return{
+           "code":code,
+           "type_counter":self.typeCount, 
+           "instr_counter":self.instrCount,
+           "contextTree":self.contextTree,
+           "vars" :self.declVar,
+           "functions":self.declFun,
+           "notInit":self.notInit,
+           "unused": self.unused,
+           "undecl":self.undecl,
+           "warnings":self.warnings,
+           "errors":self.errors,
+        }
 
     def code(self,tree):
        c = self.visit_children(tree)
@@ -69,6 +81,7 @@ class analyzer(Interpreter):
        return c[0]
        
     def instr(self,tree):
+       self.instrCount+=1
        c = self.visit_children(tree)
        return c[0]
 
@@ -153,10 +166,8 @@ class analyzer(Interpreter):
         else:
             return ("",tree.children[0].value)
             
-    def tipo(self,tree):
-        print(tree)
+    def tipo(self,tree):    
         x=self.visit_children(tree)
-        print(x)
         if len(x)==1 and isinstance(x[0],Token) :
           return x[0].value
         else:
@@ -430,13 +441,3 @@ class analyzer(Interpreter):
     
 
 #Add argparser and flit maybe?
-
-p = Lark(grammar,propagate_positions=True)
-while(True):
-  file = input()
-  try:
-    parse_tree = p.parse(file)
-    data = analyzer().visit(parse_tree)
-  except [UnexpectedToken,UnexpectedInput,UnexpectedEOF,UnexpectedCharacters] :
-    print("error in grammar")
-  print("\n\n")
