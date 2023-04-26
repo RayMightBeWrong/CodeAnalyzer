@@ -1,0 +1,124 @@
+
+<!DOCTYPE html>
+<html>
+    <style>
+        .error {position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black;
+        color: red;
+        }
+        .code-block{
+            border: 1px solid grey; 
+            background-color: #f2f2f2;
+            margin: 10px
+        }
+        .code {
+            position: relative;
+            display: inline-block;
+            margin-left: 10px
+        }
+        .error .errortext {
+        visibility: hidden;
+        width: 200px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 0;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -40px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        }
+        .error .errortext::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 20%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #555 transparent transparent transparent;
+        }
+        .error:hover .errortext {
+        visibility: visible;
+        opacity: 1;
+        }
+        </style>
+    <head>
+        <title> Code Analyzer Report </title>
+        <meta charset="utf-8"/>
+    </head>
+    <body>
+        <h1> Code Analyzer Report: test.code</h1>
+
+        <h3>Variables Used</h3>
+        <table style="border-collapse: collapse; width: 30%; height: 81px;" border="1">
+            <thead>
+                <tr>
+                    <th>Variable Name</th>
+                    <th>Type</th>
+                    <th>Context</th>
+                    <th>Values</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr>
+                <td>i</th>
+                <td>int</th>
+                <td>global</th>
+                <td>[10]</th>
+            </tr>
+        
+            </tbody>
+        </table>
+    
+            <h3> Intructions Used</h3>
+            <p> In total, there were 0 instructions used!
+            <p> In the table bellow, we can see these instructions organized by type:</p>
+            <table style="border-collapse: collapse; width: 10%; height: 81px;" border="1">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Number</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr>
+                <td>attr</td>
+                <td>0</td>
+            </tr>
+        
+            <tr>
+                <td>read</td>
+                <td>0</td>
+            </tr>
+        
+            <tr>
+                <td>write</td>
+                <td>0</td>
+            </tr>
+        
+            <tr>
+                <td>cond</td>
+                <td>0</td>
+            </tr>
+        
+            <tr>
+                <td>cycle</td>
+                <td>0</td>
+            </tr>
+        
+            </tbody>
+        </table>
+    <h3>Annotated Code</h3>
+    <pre><div class="code-block"><code>
+<p style="margin-top: -20px;" class="code"><div class="error">int i = 10<span class="errortext">Variable initialized but never used</span></div>;</p>
+<p style="margin-top: -20px;" class="code"></p>
+</code></div></pre></body>
+</html>

@@ -74,12 +74,14 @@ class analyzer(Interpreter):
           type= self.declVar[definedIn][var]["type"]
           if definedIn+var in self.unused: self.unused.pop(definedIn+var)
           if value==None:
-             self.notInit.append({"errorMsg":"Variable used, but no value attributed to it","meta":vars(tree.meta)})
+             self.notInit.append(vars(tree.meta))
           return type,value
       
     ## RULES
     def start(self,tree):
         code =self.visit_children(tree)
+        print(code,end="\n\n")
+        print(vars(self))
         return{
            "code":code,
            "type_counter":self.typeCount, 
@@ -136,7 +138,7 @@ class analyzer(Interpreter):
 
           if not search:
             #If it wasnt found, declare it as undefined
-            self.undecl[self.context[-1]+ name] = vars(tree.meta)
+            self.undecl.append(vars(tree.meta))
           else:
             # If it was, add its new value to the stack
             # TODO: If it as a type, we could check if is a valid assignment
