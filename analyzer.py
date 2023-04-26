@@ -8,7 +8,6 @@ from lark.exceptions import UnexpectedCharacters,UnexpectedEOF,UnexpectedInput,U
 from grammar import grammar
 from html_creator import html_builder
 
-#TODO: Refactor no codigo para reduzir redundancia
 #TODO: Marcação de utilização de variaveis
 #TODO: Marcação de erros nas operações de calculo de expressoes
 #TODO: Testes
@@ -26,9 +25,39 @@ class analyzer(Interpreter):
         self.warnings   = []               # General warnings list
         self.errors     = []               # List of errors
         self.contextStk = ["global"]       # Current stack context
+    
+    ## Auxiliary functions
+    def vstContentAux(self,tree,contextN):
+      node=self.contextTree
+      for contxt in self.contextStk:
+        node= node[contxt]
+      node[contextN]={}
+      self.contextStk.append(contextN)
+      content =  self.visit(tree)
+      self.contextStk.pop(-1)
+      return content
 
+    def useVariableAux(self,tree,var):
+      definedIn = ""
+      search=False
+      for context in self.contextStk:
+          if var in self.declVar[context]:
+            definedIn = context
+            search=True
+      if not search:
+          self.undecl[self.context[-1]+ var] = vars(tree.meta)
+          return None,None
+      else:
+          value= self.declVar[definedIn][var]["value"][-1] if len(self.declVar[definedIn][var]["value"])>0 else None
+          type= self.declVar[definedIn][var]["type"]
+          if value==None:
+             self.warnings.append({"errorMsg":"Variable used, but no value attributed to it","meta":vars(tree.meta)})
+          return type,value
+
+      
+    ## RULES
     def start(self,tree):
-        print(self.visit_children(tree))
+        print(self.visit_children(tree),end="\n\n")
         print(vars(self))
 
     def code(self,tree):
@@ -64,7 +93,7 @@ class analyzer(Interpreter):
           search = False
           definedIn = ""
           for context in self.contextStk:
-              if name in self.declFun[context]:
+              if name in self.declVar[context]:
                 definedIn = context
                 search=True
 
@@ -84,7 +113,9 @@ class analyzer(Interpreter):
           else:
               # Not defined nor used
               # TODO: If it as a type, we could check if is a valid assignment
-              if assignment: self.declVar[self.contextStk[-1]] = {"type":tipo,"value":[value]}
+              if not self.contextStk[-1] in self.declVar: self.declVar[self.contextStk[-1]]={}
+              
+              if assignment: self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":[value]}
               else: self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":[]}
 
               self.unused[self.contextStk[-1]+ name] = vars(tree.meta)
@@ -128,11 +159,13 @@ class analyzer(Interpreter):
             return ("",tree.children[0].value)
             
     def tipo(self,tree):
+        print(tree)
         x=self.visit_children(tree)
-        if len(x)==1:
+        print(x)
+        if len(x)==1 and isinstance(x[0],Token) :
           return x[0].value
         else:
-          return x
+          return x[0]
         
     def func(self,tree):
         #TODO: Verify args types
@@ -266,64 +299,82 @@ class analyzer(Interpreter):
     def whileloop(self,tree):
       self.typeCount["cycle"]+=1
       condition = self.visit(tree.children[0])
-      node=self.contextTree
-      for contxt in self.contextStk:
-        node= node[contxt]
-      node["wloop"+self.typeCount["cycle"]]={}
-      self.contextStk.append("wloop"+self.typeCount["cycle"])
-      content =  self.visit(tree.children[1])
-      self.contextStk.pop(-1)
-      return {"wloop"+self.typeCount["cycle"]:{"cond":condition, "content":content}}
+      content = self.vstContentAux(tree.children[1], "wloop"+str(self.typeCount["cycle"]))
+      return {"wloop"+str(self.typeCount["cycle"]):{"cond":condition, "content":content}}
       
     def forloop(self,tree):
       self.typeCount["cycle"]+=1
-      
-      #TODO:Create a var
       iterator = self.visit(tree.children[0])
-      
+
       #TODO: range treatment
       range = self.visit(tree.children[1])
 
-      node=self.contextTree
-      for contxt in self.contextStk:
-        node= node[contxt]
-      node["floop"+self.typeCount["cycle"]]={}
-      self.contextStk.append("floop"+self.typeCount["cycle"])
-      content =  self.visit(tree.children[2])
-      self.contextStk.pop(-1)
-      return {"floop"+self.typeCount["cycle"]:{"range":range, "content":content}}
-      
-    def range(self,tree):
-      pass
+      self.declVar["floop"+str(self.typeCount["cycle"])]={}
+      self.declVar["floop"+str(self.typeCount["cycle"])][iterator]= {"type":"iterator","value":range}
 
+      content = self.vstContentAux(tree.children[2],"floop"+str(self.typeCount["cycle"]))
+      
+      return {"floop"+str(self.typeCount["cycle"]):{"range":range, "content":content}}
+    
+    def range(self,tree):
+      #Its a var and it needs to be type checked
+      if isinstance(tree.children[0],Token):
+         iterable = tree.children[0].value
+         type,value=self.useVariableAux(tree,iterable)
+        #TODO: typecheck
+      else:
+         return self.visit(tree.children[0])[0]
+
+         
+        
     def range_explicit(self,tree):
-      if tree.children[0] > tree.children[1]:
+      if tree.children[0].value > tree.children[1].value:
         self.errors.append({
             "errorMsg": "Invalid range",
             "meta": vars(tree.meta)
         })
+      return {"range_explicit":{"min":tree.children[0].value,"max":tree.children[1].value,}}
+     
+    def iterable(self,tree):
+      c = self.visit(tree.children[0])
+      return {"iterableObj":{"value" :c[0]}}
 
+    def string(self,tree):
+      return {"string":tree.children[0].value}
+
+    def array(self,tree):
+      c = self.visit(tree.children[0])
+      return {"array":c}
+      
+    def list(self,tree):
+      c = self.visit(tree.children[0])
+      return {"list":c}
+
+    def tuple(self,tree):
+      c = self.visit(tree.children[0])
+      return {"tuple":c}
+    
+    def elems(self,tree):
+        exps=[]
+        for i in range(len(tree.children)):
+          exps.append(self.visit(tree.children[i]))
+        return exps
+  
+    def darray(self,tree):
+       c = self.visit_children(tree)
+       return c
+       
+          
     def dowhile(self,tree):
       self.typeCount["cycle"]+=1
       condition = self.visit(tree.children[1])
-      node=self.contextTree
-      for contxt in self.contextStk:
-        node= node[contxt]
-      node["dwloop"+self.typeCount["cycle"]]={}
-      self.contextStk.append("dwloop"+self.typeCount["cycle"])
-      content =  self.visit(tree.children[0])
-      self.contextStk.pop(-1)
-      return {"dwloop"+self.typeCount["cycle"]:{"cond":condition, "content":content}}
+      content = self.vstContentAux(tree.children[0],"dwloop"+str(self.typeCount["cycle"]))
+
+      return {"dwloop"+str(self.typeCount["cycle"]):{"cond":condition, "content":content}}
     
     def ifcond(self,tree):
       condition = self.visit(tree.children[0])
-      node=self.contextTree
-      for contxt in self.contextStk:
-        node= node[contxt]
-      node["ifcond"+str(self.typeCount["cond"])]={}
-      self.contextStk.append("ifcond"+str(self.typeCount["cond"]))
-      content =  self.visit(tree.children[1])
-      self.contextStk.pop(-1)
+      content = self.vstContentAux(tree.children[1],"ifcond"+str(self.typeCount["cond"]))
       elses=[]
       for i in range(2,len(tree.children)):
            elses.append(self.visit(tree.children[i]))
@@ -332,24 +383,11 @@ class analyzer(Interpreter):
     
     def elifcond(self,tree):
       condition = self.visit(tree.children[0])
-      node=self.contextTree
-      for contxt in self.contextStk:
-        node= node[contxt]
-      node["elif"+str(self.typeCount["cond"])]={}
-      self.contextStk.append("elif"+str(self.typeCount["cond"]))
-      content =  self.visit(tree.children[1])
-      self.contextStk.pop(-1)
-     
+      content = self.vstContentAux(tree.children[1],"elif"+str(self.typeCount["cond"]))
       return {"elif":{"cond":condition, "content":content}}
 
     def elsecond(self,tree):
-      node=self.contextTree
-      for contxt in self.contextStk:
-        node= node[contxt]
-      node["elif"+str(self.typeCount["cond"])]={}
-      self.contextStk.append("elif"+str(self.typeCount["cond"]))
-      content =  self.visit(tree.children[1])
-      self.contextStk.pop(-1)
+      content = self.vstContentAux(tree.children[0],"else"+str(self.typeCount["cond"]))
       return {"else":{"content":content}}
     
     def funcname(self,tree):
@@ -362,8 +400,9 @@ class analyzer(Interpreter):
       return c[0]
     
     def switch(self,tree):
-      #TODO:Use a var
       var = tree.children[0].value
+      type,value = self.useVariableAux(tree,tree.children[0].value)
+
       cases=[]
       for i in range(1,len(tree.children)-1):
         cases.append(self.visit(tree.children[i]))
@@ -379,23 +418,11 @@ class analyzer(Interpreter):
 
     def case(self,tree):
       expression = self.visit(tree.children[0])
-      node=self.contextTree
-      for contxt in self.contextStk:
-        node= node[contxt]
-      node["casecond"+str(self.typeCount["cond"])]={}
-      self.contextStk.append("casecond"+str(self.typeCount["cond"]))
-      content =  self.visit(tree.children[1])
-      self.contextStk.pop(-1)
+      content= self.vstContentAux(tree.children[1],"casecond"+str(self.typeCount["cond"]))
       return {"case":{"expression":expression, "content":content}}
     
     def default(self,tree):
-      node=self.contextTree
-      for contxt in self.contextStk:
-        node= node[contxt]
-      node["defcond"+str(self.typeCount["cond"])]={}
-      self.contextStk.append("defcond"+str(self.typeCount["cond"]))
-      content =  self.visit(tree.children[0])
-      self.contextStk.pop(-1)
+      content= self.vstContentAux(tree.children[0],"defcond"+str(self.typeCount["cond"]))
       return {"default":{"content":content}}
     
     def bool(self,tree):

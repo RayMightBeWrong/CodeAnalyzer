@@ -69,7 +69,8 @@ content: "{" (code2|return)* "}"
 
 range: iterable
      | func
-     | range_explicit 
+     | range_explicit
+     | VAR
 
 range_explicit: "[" NUMBER ".." NUMBER "]"
 
