@@ -238,7 +238,7 @@ class analyzer(Interpreter):
     def factor(self,tree):
         c = self.visit_children(tree)
         if len(c) == 1:
-            if isinstance(c[0],Token) and c[0].type=="NUMBER":
+            if isinstance(c[0],Token) and c[0].type=="SIGNED_NUMBER":
                 return int(c[0].value)
             elif  isinstance(c[0],Token) and c[0].type=="VAR":
                 return self.declVar[c[0].value]["value"]
@@ -251,13 +251,11 @@ class analyzer(Interpreter):
                 return c     
 
     def condition(self,tree):
-        print('condition')
         self.typeCount["cond"]+=1
         c = self.visit_children(tree)
         return c[0]
     
     def cond(self,tree):
-        print('cond')
         c = self.visit_children(tree)
         if len(c)==1:
             return c[0]
@@ -268,7 +266,6 @@ class analyzer(Interpreter):
                 return c
 
     def cond2(self,tree):
-        print('cond2')
         c = self.visit_children(tree)
         if len(c)==1:
             return c[0]
@@ -279,7 +276,6 @@ class analyzer(Interpreter):
                 return c
 
     def cond3(self,tree):
-        print('cond3')
         c = self.visit_children(tree)
         if len(c)==1:
             return c
@@ -292,13 +288,11 @@ class analyzer(Interpreter):
                 return c
 
     def cond4(self,tree):
-        print('cond4')
         c = self.visit_children(tree)
         return c[0]
          
 
     def comp(self,tree):
-        print('comp')
         c = self.visit_children(tree)
 
         if len(c) == 3:
@@ -372,14 +366,45 @@ class analyzer(Interpreter):
       return {"list":c}
 
     def tuple(self,tree):
-      c = self.visit(tree.children[0])
-      return {"tuple":c}
+        fst = self.visit(tree.children[0])
+        if len(tree.children) == 1:
+            return {"tuple": [fst]}
+        else:
+            elems = self.visit(tree.children[1])
+            return {"tuple": [fst] + elems}
     
     def elems(self,tree):
         exps=[]
         for i in range(len(tree.children)):
           exps.append(self.visit(tree.children[i]))
         return exps
+
+    def elem(self,tree):
+        index = tree.children[1].value
+        typeof, value = self.useVariableAux(tree, tree.children[0].value)
+        if value != None:
+            iterType = get_type(value)
+            if iterType == 'array':
+                iterSize = typeof[1].value
+                if int(iterSize) <= int(index):
+                    self.errors.append({"errorMsg":"Array size too small for index requested", "meta":vars(tree.meta)})
+                else:
+                    return value[iterType][int(index)]
+            elif iterType == 'list':
+                iterSize = len(value[iterType])
+                if int(iterSize) <= int(index):
+                    self.errors.append({"errorMsg":"List size too small for index requested", "meta":vars(tree.meta)})
+                else:
+                    return value[iterType][int(index)]
+            elif iterType == 'tuple':
+                iterSize = len(value[iterType])
+                if int(iterSize) <= int(index):
+                    self.errors.append({"errorMsg":"Tuple size too small for index requested", "meta":vars(tree.meta)})
+                else:
+                    return value[iterType][int(index)]
+        else:
+            self.errors.append({"errorMsg":"Variable not found", "meta":vars(tree.meta)})
+        
   
     def darray(self,tree):
        c = self.visit_children(tree)

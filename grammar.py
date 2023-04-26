@@ -72,7 +72,7 @@ range: iterable
      | range_explicit
      | VAR
 
-range_explicit: "[" NUMBER ".." NUMBER "]"
+range_explicit: "[" SIGNED_NUMBER ".." SIGNED_NUMBER "]"
 
 switch: "switch" VAR case+ default?
 case: "case" express content
@@ -84,7 +84,7 @@ expnum.4: expnum LPOP term
 term: term HPOP factor
     | factor
 
-factor: NUMBER
+factor: SIGNED_NUMBER
     | VAR
     | "(" expnum ")"
     | expnum "^" expnum
@@ -167,6 +167,7 @@ COP: ">"
 
 %import common.ESCAPED_STRING
 %import common.LETTER
+%import common.SIGNED_NUMBER
 %import common.NUMBER
 %import common.WS
 %ignore WS
