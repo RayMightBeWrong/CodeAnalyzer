@@ -12,6 +12,28 @@ from html_creator import html_builder
 #TODO: Marcação de erros nas operações de calculo de expressoes
 #TODO: Testes
 
+
+def get_type(elem):
+    res = ''
+    for key in elem:
+        res = key
+    return res
+
+def make_comparison(val1, cop, val2):
+    if cop == '<':
+        return val1 < val2
+    elif cop == '>':
+        return val1 > val2
+    elif cop == '<=':
+        return val1 <= val2
+    elif cop == '>=':
+        return val1 >= val2
+    elif cop == '==':
+        return val1 == val2
+    elif cop == '!=':
+        return val1 != val2
+
+
 class analyzer(Interpreter):
     
     def __init__(self) :
@@ -229,11 +251,13 @@ class analyzer(Interpreter):
                 return c     
 
     def condition(self,tree):
+        print('condition')
         self.typeCount["cond"]+=1
         c = self.visit_children(tree)
         return c[0]
     
     def cond(self,tree):
+        print('cond')
         c = self.visit_children(tree)
         if len(c)==1:
             return c[0]
@@ -244,6 +268,7 @@ class analyzer(Interpreter):
                 return c
 
     def cond2(self,tree):
+        print('cond2')
         c = self.visit_children(tree)
         if len(c)==1:
             return c[0]
@@ -254,6 +279,7 @@ class analyzer(Interpreter):
                 return c
 
     def cond3(self,tree):
+        print('cond3')
         c = self.visit_children(tree)
         if len(c)==1:
             return c
@@ -266,31 +292,33 @@ class analyzer(Interpreter):
                 return c
 
     def cond4(self,tree):
+        print('cond4')
         c = self.visit_children(tree)
         return c[0]
          
+
     def comp(self,tree):
+        print('comp')
         c = self.visit_children(tree)
-        if c[1] == ">":
-            if isinstance(c[0],int) and isinstance(c[2],int):
-                return c[0] > c[2]
-        elif c[1] == "<":
-            if isinstance(c[0],int) and isinstance(c[2],int):
-                return c[0] < c[2]
-        elif c[1] == "<=":
-            if isinstance(c[0],int) and isinstance(c[2],int):    
-                return c[0] <= c[2]
-        elif c[1] == ">=":
-            if isinstance(c[0],int) and isinstance(c[2],int):    
-                return c[0] >= c[2]
-        elif c[1] == "==":
-            if isinstance(c[0],int) and isinstance(c[2],int):    
-                return c[0] == c[2]
-        elif c[1] == "!=":
-            if isinstance(c[0],int) and isinstance(c[2],int):    
-                return c[0] != c[2]
-        return c
+
+        if len(c) == 3:
+            type1 = type(c[0])
+            type2 = type(c[2])
+            if type1 == type({}) and type2 == type({}):
+                type1 = get_type(c[0])
+                type2 = get_type(c[2])
+                if type1 == type2:
+                    return make_comparison(c[0][type1], c[1], c[2][type2])
+                else:
+                    self.errors.append({"errorMsg":"Comparing values of different types", "meta":vars(tree.meta)})
+            elif type1 == type2:
+                return make_comparison(c[0], c[1], c[2])
+            else:
+                self.errors.append({"errorMsg":"Comparing values of different types", "meta":vars(tree.meta)})
+        else:
+            return c
     
+
     def whileloop(self,tree):
       self.typeCount["cycle"]+=1
       condition = self.visit(tree.children[0])
