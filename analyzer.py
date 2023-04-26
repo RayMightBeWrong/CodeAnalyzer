@@ -74,6 +74,7 @@ class analyzer(Interpreter):
 
     def declvar(self,tree):
         tipo=""
+        value=''
         ## 1. Recognize if it is a declaration, an assingment or booth
         decl=False
         assignment=False
@@ -159,9 +160,7 @@ class analyzer(Interpreter):
             return ("",tree.children[0].value)
             
     def tipo(self,tree):
-        print(tree)
         x=self.visit_children(tree)
-        print(x)
         if len(x)==1 and isinstance(x[0],Token) :
           return x[0].value
         else:
@@ -244,7 +243,7 @@ class analyzer(Interpreter):
         if len(c)==1:
             return c[0]
         else:
-            if isinstance(c[0],bool) and isinstance(c[1],bool):
+            if isinstance(c[0][0],bool) and isinstance(c[1][0],bool):
                 return c[0] or c[1]
             else: 
                 return c
@@ -254,7 +253,7 @@ class analyzer(Interpreter):
         if len(c)==1:
             return c[0]
         else:
-            if isinstance(c[0],bool) and isinstance(c[1],bool):
+            if isinstance(c[0][0],bool) and isinstance(c[1][0],bool):
                 return c[0] and c[1]
             else: 
                 return c
@@ -262,17 +261,18 @@ class analyzer(Interpreter):
     def cond3(self,tree):
         c = self.visit_children(tree)
         if len(c)==1:
-            return c[0]
+            return c
         else:
-            if isinstance(c[0],bool):
-                return not c[1]
+            if c[0].value == 'not' and isinstance(c[1],bool):
+                return [not c[1]]
+            if c[0].value == 'not' and isinstance(c[1][0],bool):
+                return [not c[1][0]]
             else: 
                 return c
 
     def cond4(self,tree):
         c = self.visit_children(tree)
-
-        return c
+        return c[0]
          
     def comp(self,tree):
         c = self.visit_children(tree)
@@ -431,22 +431,16 @@ class analyzer(Interpreter):
 
     # These dont work for some reason
     def NUMBER(self,number):
-      print("OIII")
       return int(number.value)
     
     def VAR(sel,var):
-      print(var)
       return var
 
 
 #Add argparser and flit maybe?
 
+import sys
+frase = sys.stdin.read()
 p = Lark(grammar,propagate_positions=True)
-while(True):
-  file = input()
-  try:
-    parse_tree = p.parse(file)
-    data = analyzer().visit(parse_tree)
-  except [UnexpectedToken,UnexpectedInput,UnexpectedEOF,UnexpectedCharacters] :
-    print("error in grammar")
-  print("\n\n")
+parse_tree = p.parse(frase)
+data = analyzer().visit(parse_tree)

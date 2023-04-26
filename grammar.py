@@ -91,7 +91,7 @@ factor: NUMBER
     | func
     | elem
 
-condition: "("? cond ")"?
+condition.6: "("? cond ")"?
 
 cond: cond "or" cond2
     | cond2
@@ -99,7 +99,7 @@ cond: cond "or" cond2
 cond2: cond2 "and" cond3
     | cond3
 
-cond3: "not" cond4
+cond3: NOT cond4
     | cond4
 
 cond4: "(" cond ")"
@@ -140,6 +140,7 @@ bool.10: TRUE | FALSE
 
 TRUE.10: "true"
 FALSE.10: "false"
+NOT.10: "not"
 
 elems: express ("," express)*
 
