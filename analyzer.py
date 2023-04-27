@@ -32,6 +32,38 @@ def make_comparison(val1, cop, val2):
     elif cop == '!=':
         return val1 != val2
 
+def isvar(val):
+    if type(val) == type([]):
+        if str(type(val[0])) == "<class 'lark.lexer.Token'>":
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+def compare_list_or_tuple(val1, cop, val2):
+    if cop == "!=":
+        if len(val1) == len(val2):
+            res = True
+            for i in range(0, len(val1)):
+                if val1[i] == val2[i]:
+                    res = False
+                    break
+            return res
+        else:
+            return True
+    elif cop == "==":
+        if len(val1) == len(val2):
+            res = True
+            for i in range(0, len(val1)):
+                if val1[i] != val2[i]:
+                    res = False
+                    break
+            return res
+        else:
+            return False 
+
 
 class analyzer(Interpreter):
     
@@ -76,6 +108,17 @@ class analyzer(Interpreter):
           if value==None:
              self.notInit.append(vars(tree.meta))
           return type,value
+
+    def convert_vars(self,tree,values):
+        for i in range(0, len(values)):
+            if type(values[i]) == type([]) and len(values[i]) > 0:
+                if isvar(values[i]):
+                    _, val = self.useVariableAux(tree, values[i][0])
+                    if val == None:
+                        self.errors.append({"errorMsg":"Variable" + values[i][0].value + " not defined", "meta":vars(tree.meta)})
+                    values[i] = val
+
+        return values
       
     ## RULES
     def start(self,tree):
@@ -266,6 +309,7 @@ class analyzer(Interpreter):
                 return c     
 
     def condition(self,tree):
+        # TODO: add function?
         self.typeCount["cond"]+=1
         c = self.visit_children(tree)
         return c[0]
@@ -275,53 +319,76 @@ class analyzer(Interpreter):
         if len(c)==1:
             return c[0]
         else:
-            if isinstance(c[0][0],bool) and isinstance(c[1][0],bool):
-                return c[0] or c[1]
+            if isinstance(c[0],bool) and isinstance(c[2],bool):
+                return c[0] or c[2]
             else: 
-                return c
+                return {"or":(c[0],c[2])}
 
     def cond2(self,tree):
         c = self.visit_children(tree)
         if len(c)==1:
             return c[0]
         else:
-            if isinstance(c[0][0],bool) and isinstance(c[1][0],bool):
-                return c[0] and c[1]
+            if isinstance(c[0],bool) and isinstance(c[2],bool):
+                return c[0] and c[2]
             else: 
-                return c
+                return {"and":(c[0],c[1])}
 
     def cond3(self,tree):
         c = self.visit_children(tree)
         if len(c)==1:
-            return c
+            return c[0]
         else:
             if c[0].value == 'not' and isinstance(c[1],bool):
-                return [not c[1]]
-            if c[0].value == 'not' and isinstance(c[1][0],bool):
-                return [not c[1][0]]
+                return not c[1]
             else: 
-                return c
+                return {"not":c[0]}
 
     def cond4(self,tree):
         c = self.visit_children(tree)
+        if isvar(c):
+            if c[0].value == 'true':
+                return True
+            elif c[0].value == 'false':
+                return False
+            else:
+                _, res = self.useVariableAux(c, c[0].value)
+                if type(res) == type(True):
+                    return res
+                else:
+                    self.errors.append({"errorMsg":"Values used in logical operation are invalid", "meta":vars(tree.meta)})
+
         return c[0]
-         
 
     def comp(self,tree):
+        # TODO: check function type
         c = self.visit_children(tree)
 
         if len(c) == 3:
-            type1 = type(c[0])
-            type2 = type(c[2])
+            type1, type2 = ('', '')
+            val1, val2 = (c[0], c[2])
+            if isvar(c[0]):
+                _, val1 = self.useVariableAux(c, c[0][0].value)
+            if isvar(c[2]):
+                _, val2 = self.useVariableAux(c, c[2][0].value)
+            type1 = type(val1)
+            type2 = type(val2)
+
             if type1 == type({}) and type2 == type({}):
-                type1 = get_type(c[0])
-                type2 = get_type(c[2])
-                if type1 == type2:
-                    return make_comparison(c[0][type1], c[1], c[2][type2])
+                dicttype1 = get_type(val1)
+                dicttype2 = get_type(val2)
+                if dicttype1 == dicttype2:
+                    if (dicttype1 == 'list' or dicttype1 == 'tuple') and (c[1] in ['<', '>', '<=', '>=']):
+                        self.errors.append({"errorMsg":"Operation not available for chosen data type", "meta":vars(tree.meta)})
+                    elif type1 == 'list' or type1 == 'tuple':
+                        return compare_list(val1[dicttype1], c[1], val2[dicttype2])
+                    elif type1 == 'tuple':
+                        return compare_tuple(val1[dicttype1], c[1], val2[dicttype2])
+                    return make_comparison(val1[dicttype1], c[1], val2[dicttype2])
                 else:
                     self.errors.append({"errorMsg":"Comparing values of different types", "meta":vars(tree.meta)})
             elif type1 == type2:
-                return make_comparison(c[0], c[1], c[2])
+                return make_comparison(val1, c[1], val2)
             else:
                 self.errors.append({"errorMsg":"Comparing values of different types", "meta":vars(tree.meta)})
         else:
@@ -373,21 +440,35 @@ class analyzer(Interpreter):
       return {"string":tree.children[0].value}
 
     def array(self,tree):
-      c = self.visit(tree.children[0])
-      return {"array":c}
+        # TODO: check type
+        if tree.children != []:
+            c = self.visit(tree.children[0])
+            c = self.convert_vars(tree, c)
+            return {"array":c}
+        else:
+            return {"array":[]}
       
     def list(self,tree):
-      c = self.visit(tree.children[0])
-      return {"list":c}
+        # TODO: check type
+        if tree.children != []:
+            c = self.visit(tree.children[0])
+            c = self.convert_vars(tree, c)
+            return {"list":c}
+        else:
+            return {"list":[]}
 
     def tuple(self,tree):
+        # TODO: check type
         fst = self.visit(tree.children[0])
+        tup = []
         if len(tree.children) == 1:
-            return {"tuple": [fst]}
+            tup = [fst]
         else:
             elems = self.visit(tree.children[1])
-            return {"tuple": [fst] + elems}
-    
+            tup = [fst] + elems
+        tup = self.convert_vars(tree, tup)
+        return {"tuple": tup}
+
     def elems(self,tree):
         exps=[]
         for i in range(len(tree.children)):
@@ -487,7 +568,7 @@ class analyzer(Interpreter):
     
     def bool(self,tree):
       c = self.visit_children(tree)
-      return c[0]=="true"
+      return str(c[0].value) == "true"
 
     def returnval(self,tree):
        if self.contextStk[-1]== "global":
