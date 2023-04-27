@@ -63,11 +63,11 @@ class analyzer(Interpreter):
       definedIn = ""
       search=False
       for context in self.contextStk:
-          if var in self.declVar[context]:
+          if context in self.declVar and var in self.declVar[context]:
             definedIn = context
             search=True
       if not search:
-          self.undecl[self.context[-1]+ var] = vars(tree.meta)
+          self.undecl.append(vars(tree.meta))
           return None,None
       else:
           value= self.declVar[definedIn][var]["value"][-1] if len(self.declVar[definedIn][var]["value"])>0 else None
@@ -80,8 +80,7 @@ class analyzer(Interpreter):
     ## RULES
     def start(self,tree):
         code =self.visit_children(tree)
-        print(code,end="\n\n")
-        print(vars(self))
+       
         return{
            "code":code,
            "type_counter":self.typeCount, 
@@ -94,18 +93,20 @@ class analyzer(Interpreter):
            "undecl":self.undecl,
            "warnings":self.warnings,
            "errors":self.errors,
+           "nested":code
         }
 
     def code(self,tree):
-       c = self.visit_children(tree)
+       self.instrCount+=1
+       c = self.visit_children(tree)[0]
        return c[0]
     
     def code2(self,tree):
+       self.instrCount+=1
        c = self.visit_children(tree)
        return c[0]
        
     def instr(self,tree):
-       self.instrCount+=1
        c = self.visit_children(tree)
        return c[0]
 
@@ -143,10 +144,12 @@ class analyzer(Interpreter):
             # If it was, add its new value to the stack
             # TODO: If it as a type, we could check if is a valid assignment
             self.declVar[definedIn][name]["value"].append(value)
+            if assignment: self.typeCount["attr"]+=1
         
         else:
           name = tree.children[1].value
-          if name in self.declVar[self.contextStk[-1]]:
+
+          if self.contextStk[-1] in self.declVar and  name in self.declVar[self.contextStk[-1]]:
               #Already defined
               self.errors.append({"errorMsg":"Already defined it current context", "meta":vars(tree.meta)})
           else:
@@ -156,6 +159,8 @@ class analyzer(Interpreter):
               
               if assignment: self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":[value]}
               else: self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":value}
+            
+              if assignment: self.typeCount["attr"]+=1
 
               self.unused[self.contextStk[-1]+ name] = vars(tree.meta)
 
@@ -164,7 +169,7 @@ class analyzer(Interpreter):
     def declfun(self,tree):
         name =tree.children[0].value
         args =tree.children[1]
-        args= self.visit_children(args)
+        args= self.visit(args)
         
         if name in self.declFun:
             self.errors.append({
@@ -172,6 +177,10 @@ class analyzer(Interpreter):
                   "meta": vars(tree.meta)
             })
         else:     
+            for arg in args:
+               self.declVar[name]={}
+               self.declVar[name][arg[1]]= {"type":arg[0],"value":[]}
+
             
             self.declFun[name]={
                 "args":args
@@ -182,6 +191,7 @@ class analyzer(Interpreter):
         return {"dclFun":{"name":name,"args":args,"content":content}}
        
     def argsdef(self,tree):
+        
         c = self.visit_children(tree)
         return c
 
@@ -200,8 +210,16 @@ class analyzer(Interpreter):
         
     def func(self,tree):
         #TODO: Verify args types
-        c = self.visit_children(tree)
-        return {"func":{"name":c[0].value,"args":c[1]}}
+        func= self.visit(tree.children[0])
+        if func.type=="WORD":
+           if not func.value in self.declFun:
+              self.warnings.append({"errorMsg":"Function not defined!","meta":vars(tree.meta)})
+              return None
+        elif func.type=="READ":self.typeCount["read"]+=1
+        elif func.type=="WRITE":self.typeCount["write"]+=1
+        
+        c = self.visit(tree.children[1])
+        return {"func":{"name":func.value,"args":c[0]}}
 
     def args(self,tree):
         c = self.visit_children(tree)
@@ -256,7 +274,10 @@ class analyzer(Interpreter):
             if isinstance(c[0],Token) and c[0].type=="NUMBER":
                 return int(c[0].value)
             elif  isinstance(c[0],Token) and c[0].type=="VAR":
-                return self.declVar[c[0].value]["value"]
+                type,value=self.useVariableAux(tree,c[0].value)
+                if value== None:
+                   return c[0]
+                else: return self.declVar[value]["value"]
             else:
                 return c[0]
         else:
@@ -266,54 +287,52 @@ class analyzer(Interpreter):
                 return c     
 
     def condition(self,tree):
-        print('condition')
+        
         self.typeCount["cond"]+=1
         c = self.visit_children(tree)
         return c[0]
     
     def cond(self,tree):
-        print('cond')
+        
         c = self.visit_children(tree)
         if len(c)==1:
             return c[0]
         else:
-            if isinstance(c[0][0],bool) and isinstance(c[1][0],bool):
+            if isinstance(c[0],bool) and isinstance(c[1],bool):
                 return c[0] or c[1]
             else: 
-                return c
+                return {"or":(c[0],c[1])}
 
     def cond2(self,tree):
-        print('cond2')
+        
         c = self.visit_children(tree)
         if len(c)==1:
             return c[0]
         else:
-            if isinstance(c[0][0],bool) and isinstance(c[1][0],bool):
+            if isinstance(c[0],bool) and isinstance(c[1],bool):
                 return c[0] and c[1]
             else: 
-                return c
+                return {"and":(c[0],c[1])}
 
     def cond3(self,tree):
-        print('cond3')
+        
         c = self.visit_children(tree)
         if len(c)==1:
-            return c
+            return c[0]
         else:
             if c[0].value == 'not' and isinstance(c[1],bool):
-                return [not c[1]]
-            if c[0].value == 'not' and isinstance(c[1][0],bool):
-                return [not c[1][0]]
+                return not c[1]
             else: 
-                return c
+                return {"not":c[0]}
 
     def cond4(self,tree):
-        print('cond4')
+        
         c = self.visit_children(tree)
         return c[0]
          
 
     def comp(self,tree):
-        print('comp')
+        
         c = self.visit_children(tree)
 
         if len(c) == 3:
@@ -409,7 +428,7 @@ class analyzer(Interpreter):
     
     def ifcond(self,tree):
       condition = self.visit(tree.children[0])
-      content = self.vstContentAux(tree.children[1],"ifcond"+str(self.typeCount["cond"]))
+      content = self.vstContentAux(tree.children[1],"if"+str(self.typeCount["cond"]))
       elses=[]
       for i in range(2,len(tree.children)):
            elses.append(self.visit(tree.children[i]))
@@ -426,13 +445,9 @@ class analyzer(Interpreter):
       return {"else":{"content":content}}
     
     def funcname(self,tree):
-      c = self.visit_children(tree)
-      if c[0].value == "write":
-        self.typeCount["write"]+=1
-      elif c[0].value == "read":
-        self.typeCount["read"]+=1
 
-      return c[0]
+      return tree.children[0]
+
     
     def switch(self,tree):
       var = tree.children[0].value
@@ -465,16 +480,12 @@ class analyzer(Interpreter):
       return c[0]=="true"
 
     def returnval(self,tree):
+       
        if self.contextStk[-1]== "global":
           self.errors.append({"errorMsg":"Return in the global context", "meta":vars(tree.meta)})
        else:
+          self.instrCount+=1 
           c = self.visit(tree.children[0])
           return {"return": c}
 
 #Add argparser and flit maybe?
-
-import sys
-frase = sys.stdin.read()
-p = Lark(grammar,propagate_positions=True)
-parse_tree = p.parse(frase)
-data = analyzer().visit(parse_tree)

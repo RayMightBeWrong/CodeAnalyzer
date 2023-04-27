@@ -53,7 +53,7 @@ funcname: READ
 args: arg ("," arg)*
 arg: express
 
-return: "return" express ";"
+returnval: "return" express ";"
 
 ifcond: "if" condition content elifcond* elsecond?
 elifcond: "elif" condition content 
@@ -65,7 +65,7 @@ dowhile: "do" content "while" condition
 
 forloop: "for" VAR "in" range content
 
-content: "{" (code2|return)* "}"
+content: "{" (code2|returnval)* "}"
 
 range: iterable
      | func
