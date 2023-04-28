@@ -180,7 +180,6 @@ def html_variables(variables):
         """.format(name=var["name"],type=var["type"],contxt=var["context"],values=var["values"])
     return html.format(tbody=tbody)
 
-
 def prepareVars(declVar:dict):
     variables=[]
     for contxt in declVar.keys():

@@ -114,7 +114,8 @@ comp: express COP express
 
 
 tipo: INT | BOOL | STRING | darray | LIST | TUPLE
-darray: tipo "[" NUMBER? "]"
+darray: tipo "[" NUMBER "]"
+
 
 BOOL: "bool"
 INT: "int"
@@ -136,8 +137,8 @@ iterable: string
         | tuple
 
 string: ESCAPED_STRING
-array: "[" elems? "]"
-list: "{" elems? "}"
+array: "[" elems? "]"         
+list: "{" elems? "}"  
 tuple: "(" express "," elems?")"
 
 
