@@ -2,10 +2,55 @@
 <!DOCTYPE html>
 <html>
     <style>
+        /* Remove default bullets */
+        ul, #myUL {
+        list-style-type: none;
+        }
+
+        /* Remove margins and padding from the parent ul */
+        #myUL {
+        margin: 0;
+        padding: 0;
+        }
+
+        /* Style the caret/arrow */
+        .caret {
+        cursor: pointer;
+        user-select: none; /* Prevent text selection */
+        }
+
+        /* Create the caret/arrow with a unicode, and style it */
+        .caret::before {
+        content: "\25B6";
+        color: black;
+        display: inline-block;
+        margin-right: 6px;
+        }
+
+        /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+        .caret-down::before {
+        transform: rotate(90deg);
+        }
+
+        /* Hide the nested list */
+        .nested {
+        display: none;
+        }
+
+        /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+        .active {
+        display: block;
+        } 
+
         .error {position: relative;
         display: inline-block;
         border-bottom: 1px dotted black;
         color: red;
+        }
+        .warning{position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black;
+        color: orange;
         }
         .code-block{
             border: 1px solid grey; 
@@ -17,9 +62,25 @@
             display: inline-block;
             margin-left: 10px
         }
-        .error .errortext {
+        .warning .errortext  {
+            visibility: hidden;
+            width: 350px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -40px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .error .errortext  {
         visibility: hidden;
-        width: 200px;
+        width: 350px;
         background-color: #555;
         color: #fff;
         text-align: center;
@@ -47,16 +108,33 @@
         visibility: visible;
         opacity: 1;
         }
+
+
+        .warning .errortext::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 20%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #555 transparent transparent transparent;
+        }
+        .warning:hover .errortext {
+        visibility: visible;
+        opacity: 1;
+        }
+
         </style>
     <head>
         <title> Code Analyzer Report </title>
         <meta charset="utf-8"/>
     </head>
     <body>
-        <h1> Code Analyzer Report: test.code</h1>
+        <h1> Code Analyzer Report: </h1>
 
         <h3>Variables Used</h3>
-        <table style="border-collapse: collapse; width: 30%; height: 81px;" border="1">
+        <table style="border-collapse: collapse; width: 50%; height: 81px;" border="1">
             <thead>
                 <tr>
                     <th>Variable Name</th>
@@ -71,14 +149,49 @@
                 <td>i</th>
                 <td>int</th>
                 <td>global</th>
-                <td>[10]</th>
+                <td>[{'int': 0}, {'int': 50}]</th>
+            </tr>
+        
+            <tr>
+                <td>lk</th>
+                <td>bool</th>
+                <td>global</th>
+                <td>[{'op_bool': ({'bool': False}, 'or', {'var': {'type': 'int', 'value': {'int': 50}}})}, {'op_bool': ('not', {'bool': {'op_bool': ({'bool': False}, 'or', {'var': {'type': 'int', 'value': {'int': 50}}})}})}]</th>
+            </tr>
+        
+            <tr>
+                <td>x</th>
+                <td>string</th>
+                <td>global</th>
+                <td>[{'string': '"oi"'}]</th>
+            </tr>
+        
+            <tr>
+                <td>l</th>
+                <td>list</th>
+                <td>global</th>
+                <td>[{'list': [{'int': 2}, {'string': '"OLA"'}]}]</th>
+            </tr>
+        
+            <tr>
+                <td>n</th>
+                <td>any</th>
+                <td>Fibonacci</th>
+                <td>['arg']</th>
+            </tr>
+        
+            <tr>
+                <td>x</th>
+                <td>int</th>
+                <td>elif4</th>
+                <td>[{'int': 0}]</th>
             </tr>
         
             </tbody>
         </table>
     
             <h3> Intructions Used</h3>
-            <p> In total, there were 0 instructions used!
+            <p> In total, there were 16 instructions used!
             <p> In the table bellow, we can see these instructions organized by type:</p>
             <table style="border-collapse: collapse; width: 10%; height: 81px;" border="1">
             <thead>
@@ -91,7 +204,7 @@
                 
             <tr>
                 <td>attr</td>
-                <td>0</td>
+                <td>13</td>
             </tr>
         
             <tr>
@@ -101,12 +214,12 @@
         
             <tr>
                 <td>write</td>
-                <td>0</td>
+                <td>1</td>
             </tr>
         
             <tr>
                 <td>cond</td>
-                <td>0</td>
+                <td>5</td>
             </tr>
         
             <tr>
@@ -116,9 +229,61 @@
         
             </tbody>
         </table>
-    <h3>Annotated Code</h3>
+    <h3>Instruction Counter based on Context</h3><ul id="myUL">
+<li><span class="caret">global</span>
+<ul class="nested">
+<li>dclVar:9</li><li><span class="caret">dclFun_Fibonacci</span>
+<ul class="nested">
+<li><span class="caret">if_if3</span>
+<ul class="nested">
+<li>func:1</li></ul></li><li><span class="caret">elif_elif4</span>
+<ul class="nested">
+<li>dclVar:1</li><li>return:1</li></ul></li><li><span class="caret">elif_elif5</span>
+<ul class="nested">
+<li>return:1</li></ul></li><li><span class="caret">elif_else5</span>
+<ul class="nested">
+<li>return:1</li></ul></li></ul></li></ul></li></ul><h3>Annotated Code</h3>
     <pre><div class="code-block"><code>
-<p style="margin-top: -20px;" class="code"><div class="error">int i = 10<span class="errortext">Variable initialized but never used</span></div>;</p>
 <p style="margin-top: -20px;" class="code"></p>
-</code></div></pre></body>
+<p style="margin-top: -20px;" class="code">int i = 0;</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code">i = 20 + 30;</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code"><div class="warning">i = "ola"<span class="errortext">warning:Unverified type assignment</span></div>;</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code">bool lk = <div class="warning">false or <div class="error">i<span class="errortext">error:Invalid operators for bool operation</span></div><span class="errortext">warning:Invalid operators for bool operation</span></div>;</p>
+<p style="margin-top: -20px;" class="code">lk = not lk;</p>
+<p style="margin-top: -20px;" class="code"><div class="warning">string x = "oi"<span class="errortext">warning:Variable initialized but never used</span></div>;list l = {2,"OLA"} ;</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code"><div class="warning"><div class="warning">int[10] p = [1,1,1,2,3]<span class="errortext">warning:Unverified type assignment</span></div><span class="errortext">warning:Variable initialized but never used</span></div>;</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code"><div class="warning">x = <div class="warning">cons(l)<span class="errortext">warning:Invalid number of arguments</span></div><span class="errortext">warning:Unverified type assignment</span></div>;</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code">def Fibonacci(n){</p>
+<p style="margin-top: -20px;" class="code">    if (n < 0){</p>
+<p style="margin-top: -20px;" class="code">        write("Incorrect input","STDOUT");</p>
+<p style="margin-top: -20px;" class="code">    }</p>
+<p style="margin-top: -20px;" class="code">    elif (n == 0){</p>
+<p style="margin-top: -20px;" class="code">        int x = 0;</p>
+<p style="margin-top: -20px;" class="code">        return x;</p>
+<p style="margin-top: -20px;" class="code">    }</p>
+<p style="margin-top: -20px;" class="code">    elif n == 1 or n == 2{</p>
+<p style="margin-top: -20px;" class="code">        return 1;</p>
+<p style="margin-top: -20px;" class="code">    }</p>
+<p style="margin-top: -20px;" class="code">    else{</p>
+<p style="margin-top: -20px;" class="code">        return Fibonacci(n-1) + Fibonacci(n-2);   </p>
+<p style="margin-top: -20px;" class="code">    }</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code">}</p>
+</code></div></pre><script>
+    var toggler = document.getElementsByClassName("caret");
+var i;
+
+for (i = 0; i < toggler.length; i++) {
+  toggler[i].addEventListener("click", function() {
+    this.parentElement.querySelector(".nested").classList.toggle("active");
+    this.classList.toggle("caret-down");
+  });
+} 
+</script></body>
 </html>

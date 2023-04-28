@@ -1,7 +1,4 @@
-from grammar import grammar
-from lark import Lark
-from analyzer import analyzer
-import json
+
 
 def html_complete(fname,body):
     return '''
@@ -392,22 +389,9 @@ def html_nested(tree,nested):
 
     return html
 
-
-input_file="test2.code"
-codef = open(input_file,"r")
-code = codef.read()
-
-p = Lark(grammar,propagate_positions=True)
-parse_tree = p.parse(code)
-data = analyzer().visit(parse_tree)
-f = open("test.html","w")
-body =html_variables(prepareVars(data["vars"]))
-body+=html_instruc(data["instr_counter"],data["type_counter"])
-body+=html_nested(data["contextTree"],data["nested"])
-body+=html_code(code,prepareLabels(data))
-
-
-
-f.write(
-    html_complete(input_file,body)
-        )
+def create_html(input,data):
+    body =html_variables(prepareVars(data["vars"]))
+    body+=html_instruc(data["instr_counter"],data["type_counter"])
+    body+=html_nested(data["contextTree"],data["nested"])
+    body+=html_code(input,prepareLabels(data))
+    return html_complete("",body)

@@ -1,7 +1,5 @@
-#!/usr/bin/python3
 from lark import Token,Tree
 from lark.visitors import Interpreter
-from grammar import grammar
 
 
 def compare_list_or_tuple(val1, cop, val2):
