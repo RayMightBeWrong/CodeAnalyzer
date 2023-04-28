@@ -314,15 +314,19 @@ def html_code(code,labels):
         html+='<p style="margin-top: -20px;" class="code">'
         if line_num in labels:
             endin ={}
+            [].reverse
             for n,char in enumerate(line):
                 if n in endin:
-                    html+='<span class="errortext">'+ endin[n]["level"] +":" + endin[n]["msg"] + "</span></div>"
+                    endin[n].reverse()
+                    for end in endin[n]:
+                        html+='<span class="errortext">'+ end["level"] +":" + end["msg"] + "</span></div>"      
                     endin.pop(n)
                 
                 if n in labels[line_num]:
                      for each in labels[line_num][n]:
                         html+='<div class="{level}">'.format(level=each["level"])
-                        endin[each["end"]] = each
+                        if not each["end"] in endin: endin[each["end"]]=[each]
+                        else:endin[each["end"]].append(each)
                 html+=char
             
         else: html+=line
@@ -369,8 +373,6 @@ def context_builder(context,tree,instr):
             
     return build
 
-
-
 def html_context(context):
     html=""
     for i in context.keys():
@@ -382,8 +384,6 @@ def html_context(context):
             html+=html_context(context[i])
             html+="</ul></li>"
     return html
-
-
 
 def html_nested(tree,nested):
     html="""<h3>Instruction Counter based on Context</h3>"""
