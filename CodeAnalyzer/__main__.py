@@ -22,24 +22,34 @@ def main():
     # Create parser
     p = Lark(grammar,propagate_positions=True)
     
-    #Parse the inputfile
-    parse_tree = p.parse(code)
+    
+    
 
-    # Start Interpreter
-    data = analyzer().visit(parse_tree)
+    try:
+        #Parse the inputfile
+        parse_tree = p.parse(code)
+        # Start Interpreter
+        data = analyzer().visit(parse_tree)
 
-    # Open output file
-    f = open("test.html","w")
+        # Open output file
+        f = open("test.html","w")
 
-    # Compile html
-    html =create_html(code,data)
+        # Compile html
+        html =create_html(code,data)
 
-    # Write the html code
-    f.write(html)
+        # Write the html code
+        f.write(html)
 
-    # Close file descriptors
-    f.close()
+            # Close file descriptors
+        f.close()
+        
+
+    except Exception as e:
+        print(e)
+        
     codef.close()
+
+
 
 
 

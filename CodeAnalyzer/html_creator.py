@@ -77,7 +77,6 @@ def html_complete(fname,body):
             z-index: 1;
             bottom: 125%;
             left: 50%;
-            margin-left: -40px;
             opacity: 0;
             transition: opacity 0.3s;
         }}
@@ -97,32 +96,15 @@ def html_complete(fname,body):
         opacity: 0;
         transition: opacity 0.3s;
         }}
-        .error .errortext::after {{
-        content: "";
-        position: absolute;
-        top: 100%;
-        left: 20%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: #555 transparent transparent transparent;
-        }}
+
+
         .error:hover .errortext {{
         visibility: visible;
         opacity: 1;
         }}
 
 
-        .warning .errortext::after {{
-        content: "";
-        position: absolute;
-        top: 100%;
-        left: 20%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: #555 transparent transparent transparent;
-        }}
+        
         .warning:hover .errortext {{
         visibility: visible;
         opacity: 1;
@@ -314,8 +296,15 @@ def html_code(code,labels):
             for n,char in enumerate(line):
                 if n in endin:
                     endin[n].reverse()
+                    errors=""
                     for end in endin[n]:
-                        html+='<span class="errortext">'+ end["level"] +":" + end["msg"] + "</span></div>"      
+                        errors+= end["level"] +":" + end["msg"] + "\n"
+
+                    html+='<span class="errortext">'+ errors+ "</span>"    
+                    
+                    for end in endin[n]:
+                        html+= "</div>"
+                    
                     endin.pop(n)
                 
                 if n in labels[line_num]:

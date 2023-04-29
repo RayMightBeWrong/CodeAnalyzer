@@ -98,11 +98,27 @@ class analyzer(Interpreter):
             type = value["func"]["retType"]
         return type
 
+    def verifyArray(self,value,type):
+        size = type["darray"]["size"]
+        elemtype = type["darray"]["type"]
+
+        if int(size) != len(value["array"]):
+            return False
+
+        for i in value["array"]:
+            if self.verifyType(i,elemtype) == False:
+                return False
+
+        return True
+
     #Method for verifing if 2 types are the compatible
     def verifyType(self,value, realType):
         type = self.getType(value)
         
-        if isinstance(type,list):
+        if type=="array" and isinstance(realType,dict) :
+            return self.verifyArray(value,realType)
+
+        elif isinstance(type,list):
             return realType in type or "any" in type
 
         elif type=="op_int" and realType == "int":
@@ -114,8 +130,9 @@ class analyzer(Interpreter):
         elif type=="any":
             return True 
         
-        else:
-            return type==realType
+        elif type==realType:
+            return True
+        
 
     #Method used to return the value of an already processed element
     def getValue(self,value):
@@ -185,6 +202,8 @@ class analyzer(Interpreter):
         ##2. Check for context errors
         if not decl:
           name = tree.children[0].value
+          metaError = {"line":tree.children[0].line,"column":tree.children[0].column,"end_column":tree.children[0].end_column}
+          
           search = False
           definedIn = ""
           for context in self.contextStk:
@@ -194,40 +213,42 @@ class analyzer(Interpreter):
 
           if not search:
             #If it wasnt found, declare it as undefined
-            self.undecl.append(vars(tree.meta))
+            self.undecl.append(metaError)
           else:
             # If it was, add its new value to the stack
             if self.verifyType(value,self.declVar[definedIn][name]["type"]):
                 self.declVar[definedIn][name]["value"].append(value)
                 if assignment: self.typeCount["attr"]+=1
             else:
-                self.warnings.append({"errorMsg":"Unverified type assignment","meta":vars(tree.meta)})
+                self.warnings.append({"errorMsg":"Unverified type assignment","meta":metaError})
    
         else:
           name = tree.children[1].value
-
+          metaError = {"line":tree.children[1].line,"column":tree.children[1].column,"end_column":tree.children[1].end_column}
           if self.contextStk[-1] in self.declVar and  name in self.declVar[self.contextStk[-1]]:
               #Already defined
-              self.errors.append({"errorMsg":"Already defined it current context", "meta":vars(tree.meta)})
+              
+              self.errors.append({"errorMsg":"Already defined it current context", "meta":metaError})
           else:
               # Not defined nor used
               # TODO: If it as a type, we could check if is a valid assignment
               if not self.contextStk[-1] in self.declVar: self.declVar[self.contextStk[-1]]={}
               
               if assignment:
-
                 if self.verifyType(value,tipo):
+                    
                     self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":[value]}
+                    
                     if assignment: self.typeCount["attr"]+=1
                 else:
-                    self.warnings.append({"errorMsg":"Unverified type assignment","meta":vars(tree.meta)})
+                    self.warnings.append({"errorMsg":"Unverified type assignment","meta":metaError})
             
               else: 
                   self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":value}
             
               if assignment: self.typeCount["attr"]+=1
 
-              self.unused[self.contextStk[-1]+ name] = vars(tree.meta)
+              self.unused[self.contextStk[-1]+ name] = metaError
 
         return {"dclVar":{"decl":decl,"assign":assignment,"type":tipo,"value":value}}
 
@@ -267,15 +288,17 @@ class analyzer(Interpreter):
             return ("any",tree.children[0].value)
 
     def tipo(self,tree):    
-        x=self.visit_children(tree)
-        if len(x)==1 and isinstance(x[0],Token) :
-          return x[0].value
+        if len(tree.children) == 1:
+            x=self.visit_children(tree)
+            return x[0]
         else:
-          return x[0]
-    
-    def darray(self,tree):
-       c = self.visit_children(tree)
-       return {"darray":{"type":c[0],"size":c[1].value}}
+            c = self.visit_children(tree)
+            return {"darray":{"type":c[0],"size":c[1].value}}
+
+
+    def tipo2(self,tree):
+        x=self.visit_children(tree)
+        return x[0].value
     
     def func(self,tree):
         # Currently it isnt able to verify the types of the arguments
@@ -539,7 +562,7 @@ class analyzer(Interpreter):
       return {"string":tree.children[0].value}
 
     def array(self,tree):
-        # TODO: check type
+       
         if tree.children != []:
             c = self.visit(tree.children[0])
             
@@ -548,7 +571,7 @@ class analyzer(Interpreter):
             return {"array":[]}
       
     def list(self,tree):
-        # TODO: check type
+        
         if tree.children != []:
             c = self.visit(tree.children[0])
            
@@ -576,9 +599,10 @@ class analyzer(Interpreter):
     def elem(self,tree):
         index = tree.children[1].value
         typeof, value = self.useVariableAux(tree, tree.children[0].value)
+
         if value != []:
             if self.verifyType(value,"array"):
-                iterSize = typeof[1].value
+                iterSize=typeof["darray"]["size"]
                 if int(iterSize) <= int(index):
                     self.errors.append({"errorMsg":"Array size too small for index requested", "meta":vars(tree.meta)})
                 else:

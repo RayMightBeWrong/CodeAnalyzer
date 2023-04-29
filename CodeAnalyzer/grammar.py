@@ -113,8 +113,8 @@ bool.10: TRUE | FALSE
 comp: express COP express
 
 
-tipo: INT | BOOL | STRING | darray | LIST | TUPLE
-darray: tipo "[" NUMBER "]"
+tipo: tipo "[" NUMBER "]" | tipo2
+tipo2: INT | BOOL | STRING | LIST | TUPLE
 
 
 BOOL: "bool"
