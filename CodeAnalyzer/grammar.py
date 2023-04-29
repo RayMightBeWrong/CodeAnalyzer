@@ -10,6 +10,7 @@ decl: declvar ";"
     | declfun
 
 declvar: tipo? VAR "=" express
+       | elemdec "=" express
        | tipo VAR
 
 declfun: "def" VAR "(" argsdef? ")" content
@@ -151,6 +152,7 @@ AND.10: "and"
 elems: express ("," express)*
 
 elem: VAR "[" NUMBER "]"
+elemdec: VAR "[" NUMBER "]"
 
 VAR: WORD
 

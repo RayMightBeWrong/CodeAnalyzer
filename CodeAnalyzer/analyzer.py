@@ -76,6 +76,7 @@ class analyzer(Interpreter):
           if context in self.declVar and var in self.declVar[context]:
             definedIn = context
             search=True
+
       if not search:
           self.undecl.append(vars(tree.meta))
           return "None",[]
@@ -99,23 +100,29 @@ class analyzer(Interpreter):
         return type
 
     #Method for verifing if 2 types are the compatible
-    def verifyType(self,value, realType):
+    def verifyType(self, value, realType):
         type = self.getType(value)
-        
+
         if isinstance(type,list):
             return realType in type or "any" in type
-
         elif type=="op_int" and realType == "int":
             return True 
-        
         elif type=="op_bool" and realType == "bool":
             return True 
-
         elif type=="any":
             return True 
-        
+        elif type=='array':
+            return self.verifyArrayType(value['array'], realType[0])
         else:
             return type==realType
+
+    def verifyArrayType(self, values, type):
+        res = True
+        for val in values:
+            if not self.verifyType(val, type):
+                res = False
+                break
+        return res
 
     #Method used to return the value of an already processed element
     def getValue(self,value):
@@ -129,9 +136,9 @@ class analyzer(Interpreter):
 
 
     ## RULES
-
     def start(self,tree):
         code =self.visit_children(tree)
+        print(self.declVar)
         return {
             "code":code,
             "type_counter":self.typeCount, 
@@ -172,18 +179,45 @@ class analyzer(Interpreter):
         decl=False
         value=[]
         assignment=False
+        elem = False
+
         #If the first children is a Tree, it means it is a declaration
         if isinstance(tree.children[0],Tree):
-            tipo = self.visit(tree.children[0])
-            decl = True
+            if tree.children[0].data == 'elemdec':
+                belongsTo = self.visit(tree.children[0])
+                elem = True
+            else:
+                tipo = self.visit(tree.children[0])
+                decl = True
 
-        #If the last children is a tree then it is an assingment
+        #If the last children is a tree then it is an assignment
         if isinstance(tree.children[-1],Tree):
             value = self.visit(tree.children[-1])
             assignment=True
-        
+
         ##2. Check for context errors
-        if not decl:
+        if elem:
+            name = belongsTo['elem'][0]
+            index = belongsTo['elem'][1]
+            definedIn = ''
+            search = False
+            for context in self.contextStk:
+                if name in self.declVar[context]:
+                    definedIn = context
+                    search=True
+
+            if search:
+                iterable = self.declVar[definedIn][name]["value"][-1]
+                if 'array' in iterable:
+                    self.declVar[definedIn][name]["value"][-1]['array'][int(index)] = value
+                elif 'list' in iterable:
+                    self.declVar[definedIn][name]["value"][-1]['list'][int(index)] = value
+                else:
+                    self.errors.append({"errorMsg":"Can't atribute new values to chosen element", "meta":vars(tree.meta)})
+            else:
+                self.undecl.append(vars(tree.meta))
+
+        elif not decl:
           name = tree.children[0].value
           search = False
           definedIn = ""
@@ -215,7 +249,9 @@ class analyzer(Interpreter):
               if not self.contextStk[-1] in self.declVar: self.declVar[self.contextStk[-1]]={}
               
               if assignment:
-
+                print('value ASS', value)
+                print('tipo ASS', tipo)
+                print('\n\n')
                 if self.verifyType(value,tipo):
                     self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":[value]}
                     if assignment: self.typeCount["attr"]+=1
@@ -576,8 +612,10 @@ class analyzer(Interpreter):
     def elem(self,tree):
         index = tree.children[1].value
         typeof, value = self.useVariableAux(tree, tree.children[0].value)
+        print('elem value', value)
+        print('elem typeof', typeof)
         if value != []:
-            if self.verifyType(value,"array"):
+            if self.verifyType(value,typeof):
                 iterSize = typeof[1].value
                 if int(iterSize) <= int(index):
                     self.errors.append({"errorMsg":"Array size too small for index requested", "meta":vars(tree.meta)})
@@ -597,7 +635,9 @@ class analyzer(Interpreter):
                     return value["tuple"][int(index)]
         else:
             self.errors.append({"errorMsg":"Variable not found", "meta":vars(tree.meta)})
-        
+
+    def elemdec(self,tree):
+        return {'elem': (tree.children[0].value, tree.children[-1].value)}
   
     def darray(self,tree):
        c = self.visit_children(tree)
