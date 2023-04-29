@@ -115,16 +115,11 @@ class analyzer(Interpreter):
     #Method for verifing if 2 types are the compatible
     def verifyType(self, value, realType):
         type = self.getType(value)
-<<<<<<< HEAD
         
         if type=="array" and isinstance(realType,dict) :
             return self.verifyArray(value,realType)
 
         elif isinstance(type,list):
-=======
-
-        if isinstance(type,list):
->>>>>>> 58717c7893b4592ced784852af0f9f50f9e86513
             return realType in type or "any" in type
         elif type=="op_int" and realType == "int":
             return True 
@@ -132,17 +127,10 @@ class analyzer(Interpreter):
             return True 
         elif type=="any":
             return True 
-<<<<<<< HEAD
         
         elif type==realType:
             return True
         
-=======
-        elif type=='array':
-            return self.verifyArrayType(value['array'], realType[0])
-        else:
-            return type==realType
->>>>>>> 58717c7893b4592ced784852af0f9f50f9e86513
 
     def verifyArrayType(self, values, type):
         res = True
@@ -280,12 +268,6 @@ class analyzer(Interpreter):
               if not self.contextStk[-1] in self.declVar: self.declVar[self.contextStk[-1]]={}
               
               if assignment:
-<<<<<<< HEAD
-=======
-                print('value ASS', value)
-                print('tipo ASS', tipo)
-                print('\n\n')
->>>>>>> 58717c7893b4592ced784852af0f9f50f9e86513
                 if self.verifyType(value,tipo):
                     
                     self.declVar[self.contextStk[-1]][name] = {"type":tipo,"value":[value]}
@@ -650,18 +632,10 @@ class analyzer(Interpreter):
     def elem(self,tree):
         index = tree.children[1].value
         typeof, value = self.useVariableAux(tree, tree.children[0].value)
-<<<<<<< HEAD
 
         if value != []:
             if self.verifyType(value,"array"):
                 iterSize=typeof["darray"]["size"]
-=======
-        print('elem value', value)
-        print('elem typeof', typeof)
-        if value != []:
-            if self.verifyType(value,typeof):
-                iterSize = typeof[1].value
->>>>>>> 58717c7893b4592ced784852af0f9f50f9e86513
                 if int(iterSize) <= int(index):
                     self.errors.append({"errorMsg":"Array size too small for index requested", "meta":vars(tree.meta)})
                 else:
