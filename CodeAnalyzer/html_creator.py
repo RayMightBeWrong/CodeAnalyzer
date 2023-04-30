@@ -161,7 +161,6 @@ def html_func(functions):
     return html.format(tbody=tbody)
 
 
-
 def html_variables(variables):
     html="""
         <h3>Variables Used</h3>
