@@ -118,7 +118,7 @@ def html_complete(fname,body):
         <title> Code Analyzer Report </title>
         <meta charset="utf-8"/>
     </head>
-    <body>
+    <body style="margin: 20px;">
         <h1> Code Analyzer Report: {fname}</h1>
 '''.format(fname=fname)+body+"""<script>
     var toggler = document.getElementsByClassName("caret");
@@ -159,7 +159,6 @@ def html_func(functions):
             </tr>
         """.format(name=i,type=functions[i]["args"],contxt=functions[i]["retType"])
     return html.format(tbody=tbody)
-
 
 def html_variables(variables):
     html="""
@@ -364,7 +363,7 @@ def context_builder(context,tree,instr):
                 remove_nested2="else_" +list(tree[context].keys())[indexCntxt]
                 indexCntxt+=1
                 for elcond in i[name]["elses"]:
-                    if elcond == i[name]["elses"][-1]:
+                    if elcond == i[name]["elses"][-1] and "else" in i[name]["elses"][-1]:
                         build["elif_" + list(tree[context].keys())[indexCntxt]]=context_builder(context,tree,[elcond])[remove_nested2]
                     else:
                         build["elif_" + list(tree[context].keys())[indexCntxt]]=context_builder(context,tree,[elcond])[remove_nested]
@@ -409,7 +408,6 @@ def html_nested(tree,nested):
     html+="</ul>"
 
     return html
-
 
 def html_analyzerOutput(nested):
     html="""<h3>Output Code</h3>"""

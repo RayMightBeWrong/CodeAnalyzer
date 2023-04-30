@@ -114,6 +114,8 @@ class analyzer(Interpreter):
 
     #Method for verifing if 2 types are the compatible
     def verifyType(self, value, realType):
+        if value==None:
+            return True
         type = self.getType(value)
         
         if type=="array" and isinstance(realType,dict) :
@@ -328,7 +330,6 @@ class analyzer(Interpreter):
             c = self.visit_children(tree)
             return {"darray":{"type":c[0],"size":c[1].value}}
 
-
     def tipo2(self,tree):
         x=self.visit_children(tree)
         return x[0].value
@@ -340,9 +341,12 @@ class analyzer(Interpreter):
         if func.type=="WORD":
            if not func.value in self.declFun:
               self.warnings.append({"errorMsg":"Function not defined!","meta":vars(tree.meta)})
+              c = self.visit(tree.children[1])
+              return {"func":{"name":func.value,"args":c[0],"retType":retType}}
            else:
               args = len(self.declFun[func.value]["args"])
               retType = self.declFun[func.value]["retType"]
+            
 
         elif func.type=="READ":
             self.typeCount["read"]+=1
@@ -465,7 +469,6 @@ class analyzer(Interpreter):
                 self.warnings.append({"errorMsg":"Invalid operators for bool operation","meta":vars(tree.meta)})
                 return {"op_bool":(c[0],c[1].value,c[2])}
         
-
     def cond2(self,tree):
         c = self.visit_children(tree)
         if len(c)==1:
@@ -481,7 +484,6 @@ class analyzer(Interpreter):
                 self.warnings.append({"errorMsg":"Invalid operators for bool operation","meta":vars(tree.meta)})
                 return {"op_bool":(c[0],c[1].value,c[2])}
         
-
     def cond3(self,tree):
         c = self.visit_children(tree)
         if len(c)==1:
@@ -497,8 +499,6 @@ class analyzer(Interpreter):
                 self.warnings.append({"errorMsg":"Invalid operators for bool operation","meta":vars(tree.meta)})
                 return {"op_bool":(c[0].value,c[1])}
         
-
-
     def cond4(self,tree):
         c = self.visit_children(tree)
         if isinstance(c[0],Token):
@@ -618,8 +618,7 @@ class analyzer(Interpreter):
         else:
             return {"array":[]}
       
-    def list(self,tree):
-        
+    def list(self,tree):      
         if tree.children != []:
             c = self.visit(tree.children[0])
            
@@ -746,14 +745,20 @@ class analyzer(Interpreter):
               if contxt in self.declFun:
                   func=contxt
                   break
-            
+          
           rettype=self.getType(c)
+          
           if isinstance(rettype,list):
             for ret in rettype:
                 if not ret in self.declFun[func]["retType"]:
+                    if ret=="op_int": ret="int"
+                    elif ret == "op_bool": ret="bool"
                     self.declFun[func]["retType"].append(ret)
+
           else:
               if not rettype in self.declFun[func]["retType"]:
+                if rettype=="op_int": rettype="int"
+                elif rettype == "op_bool": rettype="bool"
                 self.declFun[func]["retType"].append(rettype)
 
           self.instrCount+=1 
