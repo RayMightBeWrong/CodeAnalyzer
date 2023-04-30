@@ -73,7 +73,7 @@ range: iterable
      | range_explicit
      | VAR
 
-range_explicit: "[" SIGNED_NUMBER ".." SIGNED_NUMBER "]"
+range_explicit.10: "[" SIGNED_NUMBER "->" SIGNED_NUMBER "]"
 
 switch: "switch" VAR case+ default?
 case: "case" express content
@@ -132,10 +132,9 @@ HEAD: "head"
 IN: "in"
 TAIL: "tail"
 
-iterable: string
+iterable.3: string
         | array
         | list
-        | tuple
 
 string: ESCAPED_STRING
 array: "[" elems? "]"         

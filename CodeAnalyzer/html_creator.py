@@ -1,5 +1,8 @@
 
 
+import json
+
+
 def html_complete(fname,body):
     return '''
 <!DOCTYPE html>
@@ -136,7 +139,7 @@ def html_variables(variables):
         <table style="border-collapse: collapse; width: 50%; height: 81px;" border="1">
             <thead>
                 <tr>
-                    <th>Variable Name</th>
+                    <th>Name</th>
                     <th>Type</th>
                     <th>Context</th>
                     <th>Values</th>
@@ -378,9 +381,18 @@ def html_nested(tree,nested):
 
     return html
 
+
+def html_analyzerOutput(nested):
+    html="""<h3>Output Code</h3>"""
+    html+="<pre><code>"+json.dumps(nested,indent=2)+"</code></pre>"
+
+    return html
+
 def create_html(input,data):
     body =html_variables(prepareVars(data["vars"]))
     body+=html_instruc(data["instr_counter"],data["type_counter"])
     body+=html_nested(data["contextTree"],data["nested"])
     body+=html_code(input,prepareLabels(data))
+    body+=html_analyzerOutput(data["nested"])
+    
     return html_complete("",body)

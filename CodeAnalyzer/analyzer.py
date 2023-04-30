@@ -143,9 +143,11 @@ class analyzer(Interpreter):
     #Method used to return the value of an already processed element
     def getValue(self,value):
         type= list(value.keys())[0]
-
         if type=="var":
-            return value["var"]["value"]
+            if   "int" in value["var"]["value"]: return value["var"]["value"]["int"]
+            elif "bool" in value["var"]["value"]: return value["var"]["value"]["bool"]
+            elif "string" in value["var"]["value"]: return value["var"]["value"]["string"]
+            else: return  value["var"]["value"]
         
         else:
             return value[type]
@@ -154,7 +156,6 @@ class analyzer(Interpreter):
     ## RULES
     def start(self,tree):
         code =self.visit_children(tree)
-        print(self.declVar)
         return {
             "code":code,
             "type_counter":self.typeCount, 
@@ -190,7 +191,6 @@ class analyzer(Interpreter):
 
     def declvar(self,tree):
         tipo=""
-        value=''
         ## 1. Recognize if it is a declaration, an assingment or booth
         decl=False
         value=[]
@@ -240,9 +240,10 @@ class analyzer(Interpreter):
           search = False
           definedIn = ""
           for context in self.contextStk:
-              if name in self.declVar[context]:
+              if context in self.declVar and name in self.declVar[context]:
                 definedIn = context
                 search=True
+                
 
           if not search:
             #If it wasnt found, declare it as undefined
@@ -283,7 +284,7 @@ class analyzer(Interpreter):
 
               self.unused[self.contextStk[-1]+ name] = metaError
 
-        return {"dclVar":{"decl":decl,"assign":assignment,"type":tipo,"value":value}}
+        return {"dclVar":{"name":name, "decl":decl,"assign":assignment,"type":tipo,"value":value}}
 
     def declfun(self,tree):
         name =tree.children[0].value
@@ -417,7 +418,7 @@ class analyzer(Interpreter):
                     elif c[1] == "/":
                         return {"int":self.getValue(c[0]) // self.getValue(c[2])}
                     elif c[1] == "%":
-                        return {"int":c[0]["int"] % c[2]["int"]}
+                        return {"int":self.getValue(c[0]) % self.getValue(c[2])}
                 else:
                     return {"op_int":(c[0],c[1],c[2])}
             else:
@@ -518,23 +519,25 @@ class analyzer(Interpreter):
     def comp(self,tree):
         # TODO: check function type
         c = self.visit_children(tree)
+        
         type1= self.getType(c[0])
         type2= self.getType(c[2])
         value1= self.getValue(c[0])
         value2= self.getValue(c[2])
         
         if isinstance(type1,list) or isinstance(type2,list):
+            self.warnings.append({"errorMsg":"Unverifiable type","meta":vars(tree.meta)})
             return {"op_bool":(c[0],c[1],c[2])}
 
         elif type1==type2:
-            if self.verifyType(type1,"list") or self.verifyType(type1,"tuple") and (c[1] in ['<', '>', '<=', '>=']):
+            if self.verifyType(c[0],"list") or self.verifyType(c[0],"tuple") and (c[1] in ['<', '>', '<=', '>=']):
                 self.errors.append({"errorMsg":"Operation not available for chosen data type", "meta":vars(tree.meta)})
                 return {"op_bool":(c[0],c[1],c[2])}
             
-            elif self.verifyType(type1,"list") or self.verifyType(type1,"tuple") :
+            elif self.verifyType(c[0],"list") or self.verifyType(c[0],"tuple") :
                 return {"bool":compare_list_or_tuple(value1, c[1], value2)}
             
-            elif self.verifyType(type1,"int") or self.verifyType(type1,"string") or self.verifyType(type1,"array") :
+            elif self.verifyType(c[0],"int") or self.verifyType(c[0],"string") or self.verifyType(c[0],"array") :
                 if isinstance(value1,int) or isinstance(value1,str):
                     return {"bool":make_comparison(value1,c[1],value2)}
                 else:
@@ -543,7 +546,14 @@ class analyzer(Interpreter):
             else:
                 self.errors.append({"errorMsg":"Operation not available for chosen data type", "meta":vars(tree.meta)})
                 return {"op_bool":(c[0],c[1],c[2])}
+        
         elif type1=="any" or type2=="any":
+            return {"op_bool":(c[0],c[1],c[2])}
+        
+        elif (type1=="int" and type2 == "op_int" ) or (type2=="int" and type1== "op_int" ):
+            return {"op_bool":(c[0],c[1],c[2])}
+
+        elif (type1=="bool" and type2 == "op_bool" )or (type2=="bool" and type1== "op_bool" ):
             return {"op_bool":(c[0],c[1],c[2])}
 
         else:
@@ -558,13 +568,13 @@ class analyzer(Interpreter):
       
     def forloop(self,tree):
       self.typeCount["cycle"]+=1
-      iterator = self.visit(tree.children[0])
+      iterator = tree.children[0].value
 
       #TODO: range treatment
       range = self.visit(tree.children[1])
 
       self.declVar["floop"+str(self.typeCount["cycle"])]={}
-      self.declVar["floop"+str(self.typeCount["cycle"])][iterator]= {"type":"iterator","value":range}
+      self.declVar["floop"+str(self.typeCount["cycle"])][iterator]= {"type":"int","value":[range]}
 
       content = self.vstContentAux(tree.children[2],"floop"+str(self.typeCount["cycle"]))
       
@@ -575,9 +585,15 @@ class analyzer(Interpreter):
       if isinstance(tree.children[0],Token):
          iterable = tree.children[0].value
          type,value=self.useVariableAux(tree,iterable)
-        #TODO: typecheck
+
+         if type=="string" or type=="list" or (isinstance(type,dict) and self.getType(type)=="darray"):
+            return {"var":{"type":type,"value":value}}
+         else:
+            metaError = {"line":tree.children[0].line,"column":tree.children[0].column,"end_column":tree.children[0].end_column}
+            self.errors.append({"errorMsg":"Not an iterable variable","meta":metaError})
+            return {"var":{"type":type,"value":value}}
       else:
-         return self.visit(tree.children[0])[0]
+         return self.visit(tree.children[0])
       
     def range_explicit(self,tree):
       if tree.children[0].value > tree.children[1].value:
@@ -589,7 +605,7 @@ class analyzer(Interpreter):
      
     def iterable(self,tree):
       c = self.visit(tree.children[0])
-      return {"iterableObj":{"value" :c[0]}}
+      return {"iterableObj":{"value" :c}}
 
     def string(self,tree):
       return {"string":tree.children[0].value}
@@ -746,3 +762,16 @@ class analyzer(Interpreter):
           self.instrCount+=1 
           
           return {"return": c}
+
+i="ola"
+x = 3
+if (x < 3):
+    i = "coisas"
+    if ( i =="ola"):
+        pass
+
+else:
+    i=="ola"
+    if ( i =="ola"):
+        pass
+

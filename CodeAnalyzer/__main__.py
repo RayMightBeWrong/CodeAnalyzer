@@ -25,27 +25,25 @@ def main():
     
     
 
-    try:
-        #Parse the inputfile
-        parse_tree = p.parse(code)
-        # Start Interpreter
-        data = analyzer().visit(parse_tree)
 
-        # Open output file
-        f = open("test.html","w")
+    #Parse the inputfile
+    parse_tree = p.parse(code)
+    # Start Interpreter
+    data = analyzer().visit(parse_tree)
 
-        # Compile html
-        html =create_html(code,data)
+    # Open output file
+    f = open("test.html","w")
 
-        # Write the html code
-        f.write(html)
+    # Compile html
+    html =create_html(code,data)
 
-            # Close file descriptors
-        f.close()
+    # Write the html code
+    f.write(html)
+
+        # Close file descriptors
+    f.close()
         
 
-    except Exception as e:
-        print(e)
         
     codef.close()
 
