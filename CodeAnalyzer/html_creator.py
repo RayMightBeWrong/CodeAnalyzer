@@ -133,6 +133,35 @@ for (i = 0; i < toggler.length; i++) {
 </script>"""+"""</body>
 </html>"""
 
+def html_func(functions):
+    html="""
+        <h3>Functions Declared</h3>
+        <table style="border-collapse: collapse; width: 50%; height: 81px;" border="1">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Arguments</th>
+                    <th>Return Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {tbody}
+            </tbody>
+        </table>
+    """
+    tbody=""
+    for i in functions.keys():
+        tbody+="""
+            <tr>
+                <td>{name}</td>
+                <td>{type}</td>
+                <td>{contxt}</td>
+            </tr>
+        """.format(name=i,type=functions[i]["args"],contxt=functions[i]["retType"])
+    return html.format(tbody=tbody)
+
+
+
 def html_variables(variables):
     html="""
         <h3>Variables Used</h3>
@@ -150,14 +179,15 @@ def html_variables(variables):
             </tbody>
         </table>
     """
+    
     tbody=""
     for var in variables:
         tbody+="""
             <tr>
-                <td>{name}</th>
-                <td>{type}</th>
-                <td>{contxt}</th>
-                <td>{values}</th>
+                <td>{name}</td>
+                <td>{type}</td>
+                <td>{contxt}</td>
+                <td>{values}</td>
             </tr>
         """.format(name=var["name"],type=var["type"],contxt=var["context"],values=var["values"])
     return html.format(tbody=tbody)
@@ -390,6 +420,7 @@ def html_analyzerOutput(nested):
 
 def create_html(input,data):
     body =html_variables(prepareVars(data["vars"]))
+    body+=html_func(data["functions"])
     body+=html_instruc(data["instr_counter"],data["type_counter"])
     body+=html_nested(data["contextTree"],data["nested"])
     body+=html_code(input,prepareLabels(data))

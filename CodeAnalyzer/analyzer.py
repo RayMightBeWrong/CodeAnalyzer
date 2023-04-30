@@ -131,7 +131,6 @@ class analyzer(Interpreter):
         elif type==realType:
             return True
         
-
     def verifyArrayType(self, values, type):
         res = True
         for val in values:
@@ -538,7 +537,7 @@ class analyzer(Interpreter):
                 return {"bool":compare_list_or_tuple(value1, c[1], value2)}
             
             elif self.verifyType(c[0],"int") or self.verifyType(c[0],"string") or self.verifyType(c[0],"array") :
-                if isinstance(value1,int) or isinstance(value1,str):
+                if isinstance(value1,int) and isinstance(value2,int) or isinstance(value1,str) and isinstance(value2,str):
                     return {"bool":make_comparison(value1,c[1],value2)}
                 else:
                     return {"op_bool":(c[0],c[1],c[2])}
@@ -629,7 +628,6 @@ class analyzer(Interpreter):
             return {"list":[]}
 
     def tuple(self,tree):
-        # TODO: check type
         fst = self.visit(tree.children[0])
         tup = []
         if len(tree.children) == 1:
@@ -706,8 +704,7 @@ class analyzer(Interpreter):
     def funcname(self,tree):
 
       return tree.children[0]
-
-    
+ 
     def switch(self,tree):
       var = tree.children[0].value
       type,value = self.useVariableAux(tree,tree.children[0].value)
