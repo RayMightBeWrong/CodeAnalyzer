@@ -763,15 +763,3 @@ class analyzer(Interpreter):
           
           return {"return": c}
 
-i="ola"
-x = 3
-if (x < 3):
-    i = "coisas"
-    if ( i =="ola"):
-        pass
-
-else:
-    i=="ola"
-    if ( i =="ola"):
-        pass
-
