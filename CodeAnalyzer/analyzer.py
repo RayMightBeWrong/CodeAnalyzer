@@ -705,7 +705,7 @@ class analyzer(Interpreter):
 
     def extractVariables(self,condition):
         vars=[]
-        if isinstance(condition,tuple):
+        if isinstance(condition,tuple) and len(condition)==3:
             if isinstance(condition[0],dict) and "var" in condition[0]:
                 vars.append(condition[0]["var"]["name"])
             elif isinstance(condition[0],dict):
@@ -714,9 +714,16 @@ class analyzer(Interpreter):
 
             if isinstance(condition[2],dict) and "var" in condition[2]:
                 vars.append(condition[2]["var"]["name"])
-
-            elif isinstance(condition[0],dict):
+            elif isinstance(condition[2],dict):
                 ret = self.extractVariables(condition[2][self.getType(condition[2])])
+                for i in ret: vars.append(i)
+    
+        elif isinstance(condition,tuple):
+            if isinstance(condition[1],dict) and "var" in condition[1]:
+                vars.append(condition[1]["var"]["name"])
+
+            elif isinstance(condition[1],dict):
+                ret = self.extractVariables(condition[1][self.getType(condition[1])])
                 for i in ret: vars.append(i)
 
         return vars
