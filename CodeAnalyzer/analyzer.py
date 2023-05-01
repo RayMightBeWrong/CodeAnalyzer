@@ -222,9 +222,17 @@ class analyzer(Interpreter):
             if search:
                 iterable = self.declVar[definedIn][name]["value"][-1]
                 if 'array' in iterable:
-                    self.declVar[definedIn][name]["value"][-1]['array'][int(index)] = value
+                    array = self.declVar[definedIn][name]["value"][-1]['array']
+                    if (len(array) < int(index)):
+                        self.declVar[definedIn][name]["value"][-1]['array'][int(index)] = value
+                    else:
+                        self.errors.append({"errorMsg":"Array size too small for index requested", "meta":vars(tree.meta)})
                 elif 'list' in iterable:
-                    self.declVar[definedIn][name]["value"][-1]['list'][int(index)] = value
+                    list = self.declVar[definedIn][name]["value"][-1]['list']
+                    if (len(list) < int(index)):
+                        self.declVar[definedIn][name]["value"][-1]['list'][int(index)] = value
+                    else:
+                        self.errors.append({"errorMsg":"List size too small for index requested", "meta":vars(tree.meta)})
                 else:
                     self.errors.append({"errorMsg":"Can't atribute new values to chosen element", "meta":vars(tree.meta)})
             else:
