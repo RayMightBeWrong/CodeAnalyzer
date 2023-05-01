@@ -400,7 +400,11 @@ def context_builder(context,tree,instr):
                     indexCntxt+=1
 
             elif name=="switch":
-                build[name+"_" + list(tree[context].keys())[indexCntxt]]=context_builder(list(tree[context].keys())[indexCntxt],tree[context],i[name]["cases"])
+                
+                nw_context=list(tree[context].keys())[indexCntxt]
+                build[name+"_" + list(tree[context].keys())[indexCntxt]]=context_builder(context,tree,i[name]["cases"])
+                indexCntxt+=1
+                nw_context=list(tree[context].keys())[indexCntxt]
                 build[name+"_" + list(tree[context].keys())[indexCntxt]]=context_builder(context,tree,[i[name]["default"]])
                 indexCntxt+=1
             
@@ -409,7 +413,6 @@ def context_builder(context,tree,instr):
                 build[name] += 1
 
             elif "content" in i[name]:
-               
                 build[name+"_" + list(tree[context].keys())[indexCntxt]]=context_builder(list(tree[context].keys())[indexCntxt],tree[context],i[name]["content"])
                 indexCntxt+=1
             else:
