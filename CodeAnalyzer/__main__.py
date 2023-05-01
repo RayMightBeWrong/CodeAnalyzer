@@ -32,7 +32,7 @@ def main():
     data = analyzer().visit(parse_tree)
 
     # Open output file
-    f = open("test.html","w")
+    f = open(args.outputFile,"w")
 
     # Compile html
     html =create_html(code,data)
@@ -40,7 +40,7 @@ def main():
     # Write the html code
     f.write(html)
 
-        # Close file descriptors
+    # Close file descriptors
     f.close()
         
 
