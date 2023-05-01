@@ -560,7 +560,6 @@ class analyzer(Interpreter):
       self.typeCount["cycle"]+=1
       iterator = tree.children[0].value
 
-      #TODO: range treatment
       range = self.visit(tree.children[1])
 
       self.declVar["floop"+str(self.typeCount["cycle"])]={}
