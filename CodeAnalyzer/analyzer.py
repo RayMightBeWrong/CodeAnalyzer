@@ -223,13 +223,13 @@ class analyzer(Interpreter):
                 iterable = self.declVar[definedIn][name]["value"][-1]
                 if 'array' in iterable:
                     array = self.declVar[definedIn][name]["value"][-1]['array']
-                    if (len(array) < int(index)):
+                    if (len(array) > int(index)):
                         self.declVar[definedIn][name]["value"][-1]['array'][int(index)] = value
                     else:
                         self.errors.append({"errorMsg":"Array size too small for index requested", "meta":vars(tree.meta)})
                 elif 'list' in iterable:
                     list = self.declVar[definedIn][name]["value"][-1]['list']
-                    if (len(list) < int(index)):
+                    if (len(list) > int(index)):
                         self.declVar[definedIn][name]["value"][-1]['list'][int(index)] = value
                     else:
                         self.errors.append({"errorMsg":"List size too small for index requested", "meta":vars(tree.meta)})
