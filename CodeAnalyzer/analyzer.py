@@ -681,28 +681,28 @@ class analyzer(Interpreter):
            elses.append(self.visit(tree.children[i]))
 
       possible = self.nestedIfCond(content,condition)
-      if possible:
-          self.warnings.append({"errorMsg":"Might be able to join ifs", "meta":vars(tree.children[0].meta)})
+      for i in possible:
+          self.warnings.append({"errorMsg":"Might be able to merge nested if", "meta":i})
       
-      return {"if":{"cond":condition, "content":content, "elses":elses}}
+      return {"if":{"cond":condition, "content":content, "elses":elses, "meta":vars(tree.children[0].meta)}}
     
     def nestedIfCond(self,content,condition):
         changedVars = []
+        metas = []
         fstcondVars = self.extractVariables(condition["op_bool"])
-        flag=False
         for elem in content:
             if self.getType(elem) == "if" and len(elem["if"]["elses"])==0:
                 condVars = self.extractVariables(elem["if"]["cond"]["op_bool"])
-                flag=True
                 for i in condVars:
                     if i in changedVars or i in fstcondVars: flag=False
+                    else: metas.append(elem["if"]["meta"])
 
             elif self.getType(elem) == "dclVar":
                 
                 if not elem["dclVar"]["decl"] and elem["dclVar"]["assign"]:
                     changedVars.append(elem["dclVar"]["name"])
 
-        return flag
+        return metas
 
     def extractVariables(self,condition):
         vars=[]
@@ -724,16 +724,14 @@ class analyzer(Interpreter):
 
 
 
-
-
     def elifcond(self,tree):
       condition = self.visit(tree.children[0])
       content = self.vstContentAux(tree.children[1],"elif"+str(self.typeCount["cond"]))
       
       possible = self.nestedIfCond(content,condition)
-      if possible:
-          self.warnings.append({"errorMsg":"Might be able to join ifs", "meta":vars(tree.children[0].meta)})
-     
+      for i in possible:
+          self.warnings.append({"errorMsg":"Might be able to merge nested if", "meta":i})
+      
       return {"elif":{"cond":condition, "content":content}}
 
     def elsecond(self,tree):
