@@ -354,19 +354,48 @@ def html_code(code,labels):
 def context_builder(context,tree,instr):
     indexCntxt=0
     build={}
+    
     for i in instr:
         if i != None:
             name = list(i.keys())[0]
             if name=="if":
-                build[name+"_" + list(tree[context].keys())[indexCntxt]]=context_builder(list(tree[context].keys())[indexCntxt],tree[context],i[name]["content"])
-                remove_nested="elif_" +list(tree[context].keys())[indexCntxt]
-                remove_nested2="else_" +list(tree[context].keys())[indexCntxt]
+                if_context=list(tree[context].keys())[indexCntxt]
+            
+                build["if_" + str(if_context)] = context_builder(if_context,tree[context],i[name]["content"])
+                elifn= "elif_" +if_context
+                elsen= "else_" +if_context
                 indexCntxt+=1
                 for elcond in i[name]["elses"]:
+                    nw_context=list(tree[context].keys())[indexCntxt]
                     if elcond == i[name]["elses"][-1] and "else" in i[name]["elses"][-1]:
-                        build["elif_" + list(tree[context].keys())[indexCntxt]]=context_builder(context,tree,[elcond])[remove_nested2]
+                        build["else_" + nw_context]=context_builder(nw_context,tree[context],i[elcond])[elsen]
                     else:
-                        build["elif_" + list(tree[context].keys())[indexCntxt]]=context_builder(context,tree,[elcond])[remove_nested]
+                        build["elif_" + nw_context]=context_builder(nw_context,tree[context],i[elcond])[elifn]
+                    
+                    indexCntxt+=1
+                
+
+
+
+
+def context_builder(context,tree,instr):
+    indexCntxt=0
+    build={}
+    for i in instr:
+        if i != None:
+            name = list(i.keys())[0]
+            if name=="if":
+                if_context=list(tree[context].keys())[indexCntxt]
+                
+                build["if_" + str(if_context)] = context_builder(if_context,tree[context],i[name]["content"])
+                
+                indexCntxt+=1
+                for elcond in i[name]["elses"]:
+                    nw_context=list(tree[context].keys())[indexCntxt]
+                    if elcond == i[name]["elses"][-1] and "else" in i[name]["elses"][-1]:
+                        build["else_" + str(nw_context)]=context_builder(nw_context,tree[context],elcond["else"]["content"])
+                    else:
+                        build["elif_" + str(nw_context)]=context_builder(nw_context,tree[context],elcond["elif"]["content"])
                     
                     indexCntxt+=1
 
@@ -380,7 +409,7 @@ def context_builder(context,tree,instr):
                 build[name] += 1
 
             elif "content" in i[name]:
-                
+               
                 build[name+"_" + list(tree[context].keys())[indexCntxt]]=context_builder(list(tree[context].keys())[indexCntxt],tree[context],i[name]["content"])
                 indexCntxt+=1
             else:

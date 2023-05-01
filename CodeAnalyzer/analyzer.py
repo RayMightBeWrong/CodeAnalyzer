@@ -144,14 +144,10 @@ class analyzer(Interpreter):
     #Method used to return the value of an already processed element
     def getValue(self,value):
         type= list(value.keys())[0]
-        if type=="var":
-            if   "int" in value["var"]["value"]: return value["var"]["value"]["int"]
-            elif "bool" in value["var"]["value"]: return value["var"]["value"]["bool"]
-            elif "string" in value["var"]["value"]: return value["var"]["value"]["string"]
-            else: return  value["var"]["value"]
+
         
-        else:
-            return value[type]
+        
+        return value[type]
 
 
     ## RULES
@@ -266,7 +262,6 @@ class analyzer(Interpreter):
               self.errors.append({"errorMsg":"Already defined it current context", "meta":metaError})
           else:
               # Not defined nor used
-              # TODO: If it as a type, we could check if is a valid assignment
               if not self.contextStk[-1] in self.declVar: self.declVar[self.contextStk[-1]]={}
               
               if assignment:
@@ -389,7 +384,7 @@ class analyzer(Interpreter):
     
     def express2(self,tree):
         type,value=self.useVariableAux(tree,tree.children[0])
-        return {"var":{"type":type, "value":value}}
+        return {"var":{"type":type, "value":value, "name":tree.children[0].value}}
 
     def expnum(self,tree):
         c = self.visit_children(tree)
@@ -403,10 +398,10 @@ class analyzer(Interpreter):
                     elif c[1] == "-":
                         return {"int":self.getValue(c[0]) - self.getValue(c[2])}
                 else:
-                    return {"op_int":(c[0],c[1],c[2])}
+                    return {"op_int":(c[0],c[1].value,c[2])}
             else:
                 self.warnings.append({"errorMsg":"Invalid operators for integer operation","meta":vars(tree.meta)})
-                return {"op_int":(c[0],c[1],c[2])}
+                return {"op_int":(c[0],c[1].value,c[2])}
             
     def term(self,tree):
         c = self.visit_children(tree)
@@ -423,10 +418,10 @@ class analyzer(Interpreter):
                     elif c[1] == "%":
                         return {"int":self.getValue(c[0]) % self.getValue(c[2])}
                 else:
-                    return {"op_int":(c[0],c[1],c[2])}
+                    return {"op_int":(c[0],c[1].value,c[2])}
             else:
                 self.warnings.append({"errorMsg":"Invalid operators for integer operation","meta":vars(tree.meta)})
-                return {"op_int":(c[0],c[1],c[2])}
+                return {"op_int":(c[0],c[1].value,c[2])}
 
     def factor(self,tree):
         c = self.visit_children(tree)
@@ -435,7 +430,7 @@ class analyzer(Interpreter):
                 return {"int":int(c[0].value)}
             elif  isinstance(c[0],Token) and c[0].type=="VAR":
                 type,value=self.useVariableAux(tree,c[0].value)
-                return {"var":{"type":type,"value":value}}
+                return {"var":{"type":type,"value":value,"name":c[0].value}}
             else:
                 return c[0]
         else:
@@ -444,10 +439,10 @@ class analyzer(Interpreter):
                     if c[1] == "^":
                         return {"int":self.getValue(c[0]) ** self.getValue(c[2])}
                 else:
-                    return {"op_int":(c[0],c[1],c[2])}
+                    return {"op_int":(c[0],c[1].value,c[2])}
             else:
                 self.warnings.append({"errorMsg":"Invalid operators for integer operation","meta":vars(tree.meta)})
-                return {"op_int":(c[0],c[1],c[2])}
+                return {"op_int":(c[0],c[1].value,c[2])}
 
     def condition(self,tree):
         self.typeCount["cond"]+=1
@@ -508,11 +503,7 @@ class analyzer(Interpreter):
                return {"bool":False}
            else:
             type, res = self.useVariableAux(tree, c[0].value)
-            if type=="bool" or type == "op_bool":
-                    return {"bool": res}
-            else:
-                self.errors.append({"errorMsg":"Invalid operators for bool operation", "meta":vars(tree.meta)})
-                return {"var":{"type":type,"value":res}}
+            return {"var":{"type":type,"value":res,"name":c[0].value}}
         else: return c[0]
     
     def comp(self,tree):
@@ -526,38 +517,38 @@ class analyzer(Interpreter):
         
         if isinstance(type1,list) or isinstance(type2,list):
             self.warnings.append({"errorMsg":"Unverifiable type","meta":vars(tree.meta)})
-            return {"op_bool":(c[0],c[1],c[2])}
+            return {"op_bool":(c[0],c[1].value,c[2])}
 
         elif type1==type2:
             if self.verifyType(c[0],"list") or self.verifyType(c[0],"tuple") and (c[1] in ['<', '>', '<=', '>=']):
                 self.errors.append({"errorMsg":"Operation not available for chosen data type", "meta":vars(tree.meta)})
-                return {"op_bool":(c[0],c[1],c[2])}
+                return {"op_bool":(c[0],c[1].value,c[2])}
             
             elif self.verifyType(c[0],"list") or self.verifyType(c[0],"tuple") :
-                return {"bool":compare_list_or_tuple(value1, c[1], value2)}
+                return {"bool":compare_list_or_tuple(value1, c[1].value, value2)}
             
             elif self.verifyType(c[0],"int") or self.verifyType(c[0],"string") or self.verifyType(c[0],"array") :
                 if isinstance(value1,int) and isinstance(value2,int) or isinstance(value1,str) and isinstance(value2,str):
-                    return {"bool":make_comparison(value1,c[1],value2)}
+                    return {"bool":make_comparison(value1,c[1].value,value2)}
                 else:
-                    return {"op_bool":(c[0],c[1],c[2])}
+                    return {"op_bool":(c[0],c[1].value,c[2])}
                
             else:
                 self.errors.append({"errorMsg":"Operation not available for chosen data type", "meta":vars(tree.meta)})
-                return {"op_bool":(c[0],c[1],c[2])}
+                return {"op_bool":(c[0],c[1].value,c[2])}
         
         elif type1=="any" or type2=="any":
-            return {"op_bool":(c[0],c[1],c[2])}
+            return {"op_bool":(c[0],c[1].value,c[2])}
         
         elif (type1=="int" and type2 == "op_int" ) or (type2=="int" and type1== "op_int" ):
-            return {"op_bool":(c[0],c[1],c[2])}
+            return {"op_bool":(c[0],c[1].value,c[2])}
 
         elif (type1=="bool" and type2 == "op_bool" )or (type2=="bool" and type1== "op_bool" ):
-            return {"op_bool":(c[0],c[1],c[2])}
+            return {"op_bool":(c[0],c[1].value,c[2])}
 
         else:
             self.errors.append({"errorMsg":"Comparing values of different types", "meta":vars(tree.meta)})
-            return {"op_bool":(c[0],c[1],c[2])}
+            return {"op_bool":(c[0],c[1].value,c[2])}
 
     def whileloop(self,tree):
       self.typeCount["cycle"]+=1
@@ -586,11 +577,11 @@ class analyzer(Interpreter):
          type,value=self.useVariableAux(tree,iterable)
 
          if type=="string" or type=="list" or (isinstance(type,dict) and self.getType(type)=="darray"):
-            return {"var":{"type":type,"value":value}}
+            return {"var":{"type":type,"value":value,"name":iterable}}
          else:
             metaError = {"line":tree.children[0].line,"column":tree.children[0].column,"end_column":tree.children[0].end_column}
             self.errors.append({"errorMsg":"Not an iterable variable","meta":metaError})
-            return {"var":{"type":type,"value":value}}
+            return {"var":{"type":type,"value":value,"name":iterable}}
       else:
          return self.visit(tree.children[0])
       
@@ -688,12 +679,61 @@ class analyzer(Interpreter):
       elses=[]
       for i in range(2,len(tree.children)):
            elses.append(self.visit(tree.children[i]))
+
+      possible = self.nestedIfCond(content,condition)
+      if possible:
+          self.warnings.append({"errorMsg":"Might be able to join ifs", "meta":vars(tree.children[0].meta)})
       
       return {"if":{"cond":condition, "content":content, "elses":elses}}
     
+    def nestedIfCond(self,content,condition):
+        changedVars = []
+        fstcondVars = self.extractVariables(condition["op_bool"])
+        flag=False
+        for elem in content:
+            if self.getType(elem) == "if" and len(elem["if"]["elses"])==0:
+                condVars = self.extractVariables(elem["if"]["cond"]["op_bool"])
+                flag=True
+                for i in condVars:
+                    if i in changedVars or i in fstcondVars: flag=False
+
+            elif self.getType(elem) == "dclVar":
+                
+                if not elem["dclVar"]["decl"] and elem["dclVar"]["assign"]:
+                    changedVars.append(elem["dclVar"]["name"])
+
+        return flag
+
+    def extractVariables(self,condition):
+        vars=[]
+        if isinstance(condition,tuple):
+            if isinstance(condition[0],dict) and "var" in condition[0]:
+                vars.append(condition[0]["var"]["name"])
+            elif isinstance(condition[0],dict):
+                ret = self.extractVariables(condition[0][self.getType(condition[0])])
+                for i in ret: vars.append(i)
+
+            if isinstance(condition[2],dict) and "var" in condition[2]:
+                vars.append(condition[2]["var"]["name"])
+
+            elif isinstance(condition[0],dict):
+                ret = self.extractVariables(condition[2][self.getType(condition[2])])
+                for i in ret: vars.append(i)
+
+        return vars
+
+
+
+
+
     def elifcond(self,tree):
       condition = self.visit(tree.children[0])
       content = self.vstContentAux(tree.children[1],"elif"+str(self.typeCount["cond"]))
+      
+      possible = self.nestedIfCond(content,condition)
+      if possible:
+          self.warnings.append({"errorMsg":"Might be able to join ifs", "meta":vars(tree.children[0].meta)})
+     
       return {"elif":{"cond":condition, "content":content}}
 
     def elsecond(self,tree):
