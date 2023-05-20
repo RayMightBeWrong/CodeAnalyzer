@@ -1,0 +1,707 @@
+
+<!DOCTYPE html>
+<html>
+    <style>
+        /* Remove default bullets */
+        ul, #myUL {
+        list-style-type: none;
+        }
+
+        /* Remove margins and padding from the parent ul */
+        #myUL {
+        margin: 0;
+        padding: 0;
+        }
+
+        /* Style the caret/arrow */
+        .caret {
+        cursor: pointer;
+        user-select: none; /* Prevent text selection */
+        }
+
+        /* Create the caret/arrow with a unicode, and style it */
+        .caret::before {
+        content: "\25B6";
+        color: black;
+        display: inline-block;
+        margin-right: 6px;
+        }
+
+        /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+        .caret-down::before {
+        transform: rotate(90deg);
+        }
+
+        /* Hide the nested list */
+        .nested {
+        display: none;
+        }
+
+        /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+        .active {
+        display: block;
+        } 
+
+        .error {position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black;
+        color: red;
+        }
+        .warning{position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black;
+        color: orange;
+        }
+        .code-block{
+            border: 1px solid grey; 
+            background-color: #f2f2f2;
+            margin: 10px
+        }
+        .code {
+            position: relative;
+            display: inline-block;
+            margin-left: 10px
+        }
+        .warning .errortext  {
+            visibility: hidden;
+            width: 350px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .error .errortext  {
+        visibility: hidden;
+        width: 350px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 0;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -40px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        }
+
+
+        .error:hover .errortext {
+        visibility: visible;
+        opacity: 1;
+        }
+
+
+        
+        .warning:hover .errortext {
+        visibility: visible;
+        opacity: 1;
+        }
+
+        </style>
+    <head>
+        <title> Code Analyzer Report </title>
+        <meta charset="utf-8"/>
+    </head>
+    <body style="margin: 20px;">
+        <h1> Code Analyzer Report: </h1>
+
+        <h3>Variables Used</h3>
+        <table style="border-collapse: collapse; width: 50%; height: 81px;" border="1">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Context</th>
+                    <th>Values</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr>
+                <td>pois</td>
+                <td>int</td>
+                <td>global</td>
+                <td>[{'int': 20}]</td>
+            </tr>
+        
+            <tr>
+                <td>k</td>
+                <td>string</td>
+                <td>global</td>
+                <td>[{'string': '"ola"'}]</td>
+            </tr>
+        
+            <tr>
+                <td>global_i</td>
+                <td>int</td>
+                <td>global</td>
+                <td>[{'op_int': ({'var': {'type': 'string', 'value': {'string': '"ola"'}, 'name': 'k'}}, '+', {'var': {'type': 'int', 'value': {'int': 20}, 'name': 'pois'}})}]</td>
+            </tr>
+        
+            <tr>
+                <td>arrayBool</td>
+                <td>{'darray': {'type': 'bool', 'size': '3'}}</td>
+                <td>global</td>
+                <td>[{'array': [{'bool': True}, {'bool': False}, {'bool': True}]}]</td>
+            </tr>
+        
+            <tr>
+                <td>x</td>
+                <td>int</td>
+                <td>global</td>
+                <td>[{'func': {'name': 'foo', 'args': {'int': 10}, 'retType': ['int']}}]</td>
+            </tr>
+        
+            <tr>
+                <td>l</td>
+                <td>int</td>
+                <td>foo</td>
+                <td>['arg']</td>
+            </tr>
+        
+            <tr>
+                <td>i</td>
+                <td>int</td>
+                <td>floop1</td>
+                <td>[{'range_explicit': {'min': '1', 'max': '10'}}]</td>
+            </tr>
+        
+            </tbody>
+        </table>
+    
+        <h3>Functions Declared</h3>
+        <table style="border-collapse: collapse; width: 50%; height: 81px;" border="1">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Arguments</th>
+                    <th>Return Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr>
+                <td>foo</td>
+                <td>[('int', 'l')]</td>
+                <td>['int']</td>
+            </tr>
+        
+            </tbody>
+        </table>
+    
+            <h3> Intructions Used</h3>
+            <p> In total, there were 19 instructions used!
+            <p> In the table bellow, we can see these instructions organized by type:</p>
+            <table style="border-collapse: collapse; width: 10%; height: 81px;" border="1">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Number</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr>
+                <td>attr</td>
+                <td>11</td>
+            </tr>
+        
+            <tr>
+                <td>read</td>
+                <td>0</td>
+            </tr>
+        
+            <tr>
+                <td>write</td>
+                <td>4</td>
+            </tr>
+        
+            <tr>
+                <td>cond</td>
+                <td>3</td>
+            </tr>
+        
+            <tr>
+                <td>cycle</td>
+                <td>1</td>
+            </tr>
+        
+            </tbody>
+        </table>
+    <h3>Instruction Counter based on Context</h3><ul id="myUL">
+<li><span class="caret">global</span>
+<ul class="nested">
+<li>dclVar:10</li><li><span class="caret">dclFun_foo</span>
+<ul class="nested">
+<li><span class="caret">floop_floop1</span>
+<ul class="nested">
+<li><span class="caret">if_if1</span>
+<ul class="nested">
+<li>func:1</li></ul></li><li><span class="caret">elif_elif2</span>
+<ul class="nested">
+<li>func:1</li></ul></li><li><span class="caret">if_if3</span>
+<ul class="nested">
+<li>func:1</li></ul></li><li><span class="caret">else_else3</span>
+<ul class="nested">
+<li>func:1</li></ul></li></ul></li><li>return:1</li></ul></li></ul></li></ul><h3>Annotated Code</h3>
+    <pre><div class="code-block"><code>
+<p style="margin-top: -20px;" class="code">int pois = 20;</p>
+<p style="margin-top: -20px;" class="code">string k = "ola";</p>
+<p style="margin-top: -20px;" class="code">int global_i = <div class="warning">k + pois<span class="errortext">warning:Invalid operators for integer operation
+</span></div>;</p>
+<p style="margin-top: -20px;" class="code">string <div class="warning"><div class="warning">frase<span class="errortext">warning:Unverified type assignment
+warning:Variable initialized but never used
+</span></div></div> = 3;</p>
+<p style="margin-top: -20px;" class="code">string <div class="error">global_i<span class="errortext">error:Already defined it current context
+</span></div>= "oi";</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code"><div class="warning">global_i<span class="errortext">warning:Unverified type assignment
+</span></div> = <div class="warning">myFunc(1,2)<span class="errortext">warning:Function not defined!
+</span></div>;</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code">bool[3] arrayBool = [true,false,true];</p>
+<p style="margin-top: -20px;" class="code"><div class="error">x<span class="errortext">error:Undeclared variable
+</span></div> = 13;</p>
+<p style="margin-top: -20px;" class="code">bool <div class="error">k<span class="errortext">error:Already defined it current context
+</span></div> = <div class="error">arrayBool[4]<span class="errortext">error:Array size too small for index requested
+</span></div>;</p>
+<p style="margin-top: -20px;" class="code"></p>
+<p style="margin-top: -20px;" class="code">def foo(int l){</p>
+<p style="margin-top: -20px;" class="code">    for i in [1 -> 10] {</p>
+<p style="margin-top: -20px;" class="code">        if (i < global_i) {</p>
+<p style="margin-top: -20px;" class="code">            write("foo","STDOUT");</p>
+<p style="margin-top: -20px;" class="code">        }</p>
+<p style="margin-top: -20px;" class="code">        elif (i > global_i) {</p>
+<p style="margin-top: -20px;" class="code">            write("bar","STDOUT");</p>
+<p style="margin-top: -20px;" class="code">        }</p>
+<p style="margin-top: -20px;" class="code">        if (i == l){</p>
+<p style="margin-top: -20px;" class="code">            write("Found it!","STDOUT");</p>
+<p style="margin-top: -20px;" class="code">        }</p>
+<p style="margin-top: -20px;" class="code">        else {</p>
+<p style="margin-top: -20px;" class="code">            write("Sad","STDOUT");</p>
+<p style="margin-top: -20px;" class="code">        }</p>
+<p style="margin-top: -20px;" class="code">    } </p>
+<p style="margin-top: -20px;" class="code">    return l;</p>
+<p style="margin-top: -20px;" class="code">}</p>
+<p style="margin-top: -20px;" class="code">int <div class="warning">x<span class="errortext">warning:Variable initialized but never used
+</span></div> = foo(10);</p>
+</code></div></pre><h3>Output Code</h3><pre><code>[
+  {
+    "dclVar": {
+      "name": "pois",
+      "decl": true,
+      "assign": true,
+      "type": "int",
+      "value": {
+        "int": 20
+      }
+    }
+  },
+  {
+    "dclVar": {
+      "name": "k",
+      "decl": true,
+      "assign": true,
+      "type": "string",
+      "value": {
+        "string": "\"ola\""
+      }
+    }
+  },
+  {
+    "dclVar": {
+      "name": "global_i",
+      "decl": true,
+      "assign": true,
+      "type": "int",
+      "value": {
+        "op_int": [
+          {
+            "var": {
+              "type": "string",
+              "value": {
+                "string": "\"ola\""
+              },
+              "name": "k"
+            }
+          },
+          "+",
+          {
+            "var": {
+              "type": "int",
+              "value": {
+                "int": 20
+              },
+              "name": "pois"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "dclVar": {
+      "name": "frase",
+      "decl": true,
+      "assign": true,
+      "type": "string",
+      "value": {
+        "int": 3
+      }
+    }
+  },
+  {
+    "dclVar": {
+      "name": "global_i",
+      "decl": true,
+      "assign": true,
+      "type": "string",
+      "value": {
+        "string": "\"oi\""
+      }
+    }
+  },
+  {
+    "dclVar": {
+      "name": "global_i",
+      "decl": false,
+      "assign": true,
+      "type": "",
+      "value": {
+        "func": {
+          "name": "myFunc",
+          "args": {
+            "int": 1
+          },
+          "retType": []
+        }
+      }
+    }
+  },
+  {
+    "dclVar": {
+      "name": "arrayBool",
+      "decl": true,
+      "assign": true,
+      "type": {
+        "darray": {
+          "type": "bool",
+          "size": "3"
+        }
+      },
+      "value": {
+        "array": [
+          {
+            "bool": true
+          },
+          {
+            "bool": false
+          },
+          {
+            "bool": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "dclVar": {
+      "name": "x",
+      "decl": false,
+      "assign": true,
+      "type": "",
+      "value": {
+        "int": 13
+      }
+    }
+  },
+  {
+    "dclVar": {
+      "name": "k",
+      "decl": true,
+      "assign": true,
+      "type": "bool",
+      "value": null
+    }
+  },
+  {
+    "dclFun": {
+      "name": "foo",
+      "args": [
+        [
+          "int",
+          "l"
+        ]
+      ],
+      "content": [
+        {
+          "floop": {
+            "range": {
+              "range_explicit": {
+                "min": "1",
+                "max": "10"
+              }
+            },
+            "content": [
+              {
+                "if": {
+                  "cond": {
+                    "op_bool": [
+                      {
+                        "var": {
+                          "type": "int",
+                          "value": {
+                            "range_explicit": {
+                              "min": "1",
+                              "max": "10"
+                            }
+                          },
+                          "name": "i"
+                        }
+                      },
+                      "<",
+                      {
+                        "var": {
+                          "type": "int",
+                          "value": {
+                            "op_int": [
+                              {
+                                "var": {
+                                  "type": "string",
+                                  "value": {
+                                    "string": "\"ola\""
+                                  },
+                                  "name": "k"
+                                }
+                              },
+                              "+",
+                              {
+                                "var": {
+                                  "type": "int",
+                                  "value": {
+                                    "int": 20
+                                  },
+                                  "name": "pois"
+                                }
+                              }
+                            ]
+                          },
+                          "name": "global_i"
+                        }
+                      }
+                    ]
+                  },
+                  "content": [
+                    {
+                      "func": {
+                        "name": "write",
+                        "args": {
+                          "string": "\"foo\""
+                        },
+                        "retType": []
+                      }
+                    }
+                  ],
+                  "elses": [
+                    {
+                      "elif": {
+                        "cond": {
+                          "op_bool": [
+                            {
+                              "var": {
+                                "type": "int",
+                                "value": {
+                                  "range_explicit": {
+                                    "min": "1",
+                                    "max": "10"
+                                  }
+                                },
+                                "name": "i"
+                              }
+                            },
+                            ">",
+                            {
+                              "var": {
+                                "type": "int",
+                                "value": {
+                                  "op_int": [
+                                    {
+                                      "var": {
+                                        "type": "string",
+                                        "value": {
+                                          "string": "\"ola\""
+                                        },
+                                        "name": "k"
+                                      }
+                                    },
+                                    "+",
+                                    {
+                                      "var": {
+                                        "type": "int",
+                                        "value": {
+                                          "int": 20
+                                        },
+                                        "name": "pois"
+                                      }
+                                    }
+                                  ]
+                                },
+                                "name": "global_i"
+                              }
+                            }
+                          ]
+                        },
+                        "content": [
+                          {
+                            "func": {
+                              "name": "write",
+                              "args": {
+                                "string": "\"bar\""
+                              },
+                              "retType": []
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "meta": {
+                    "empty": false,
+                    "line": 15,
+                    "column": 12,
+                    "start_pos": 248,
+                    "container_line": 15,
+                    "container_column": 12,
+                    "end_line": 15,
+                    "end_column": 26,
+                    "end_pos": 262,
+                    "container_end_line": 15,
+                    "container_end_column": 26
+                  }
+                }
+              },
+              {
+                "if": {
+                  "cond": {
+                    "op_bool": [
+                      {
+                        "var": {
+                          "type": "int",
+                          "value": {
+                            "range_explicit": {
+                              "min": "1",
+                              "max": "10"
+                            }
+                          },
+                          "name": "i"
+                        }
+                      },
+                      "==",
+                      {
+                        "var": {
+                          "type": "int",
+                          "value": "arg",
+                          "name": "l"
+                        }
+                      }
+                    ]
+                  },
+                  "content": [
+                    {
+                      "func": {
+                        "name": "write",
+                        "args": {
+                          "string": "\"Found it!\""
+                        },
+                        "retType": []
+                      }
+                    }
+                  ],
+                  "elses": [
+                    {
+                      "else": {
+                        "content": [
+                          {
+                            "func": {
+                              "name": "write",
+                              "args": {
+                                "string": "\"Sad\""
+                              },
+                              "retType": []
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "meta": {
+                    "empty": false,
+                    "line": 21,
+                    "column": 12,
+                    "start_pos": 396,
+                    "container_line": 21,
+                    "container_column": 12,
+                    "end_line": 21,
+                    "end_column": 20,
+                    "end_pos": 404,
+                    "container_end_line": 21,
+                    "container_end_column": 20
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "return": {
+            "var": {
+              "type": "int",
+              "value": "arg",
+              "name": "l"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "dclVar": {
+      "name": "x",
+      "decl": true,
+      "assign": true,
+      "type": "int",
+      "value": {
+        "func": {
+          "name": "foo",
+          "args": {
+            "int": 10
+          },
+          "retType": [
+            "int"
+          ]
+        }
+      }
+    }
+  }
+]</code></pre><script>
+    var toggler = document.getElementsByClassName("caret");
+var i;
+
+for (i = 0; i < toggler.length; i++) {
+  toggler[i].addEventListener("click", function() {
+    this.parentElement.querySelector(".nested").classList.toggle("active");
+    this.classList.toggle("caret-down");
+  });
+} 
+</script></body>
+</html>

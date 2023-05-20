@@ -1,0 +1,30 @@
+int pois = 20;
+string k = "ola";
+int global_i = k + pois;
+string frase = 3;
+string global_i= "oi";
+
+global_i = myFunc(1,2);
+
+bool[3] arrayBool = [true,false,true];
+x = 13;
+bool k = arrayBool[4];
+
+def foo(int l){
+    for i in [1 -> 10] {
+        if (i < global_i) {
+            write("foo","STDOUT");
+        }
+        elif (i > global_i) {
+            write("bar","STDOUT");
+        }
+        if (i == l){
+            write("Found it!","STDOUT");
+        }
+        else {
+            write("Sad","STDOUT");
+        }
+    } 
+    return l;
+}
+int x = foo(10);

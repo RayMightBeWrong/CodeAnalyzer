@@ -562,7 +562,7 @@ class analyzer(Interpreter):
       self.typeCount["cycle"]+=1
       condition = self.visit(tree.children[0])
       content = self.vstContentAux(tree.children[1], "wloop"+str(self.typeCount["cycle"]))
-      return {"wloop"+str(self.typeCount["cycle"]):{"cond":condition, "content":content}}
+      return {"wloop":{"cond":condition, "content":content}}
       
     def forloop(self,tree):
       self.typeCount["cycle"]+=1
@@ -575,7 +575,7 @@ class analyzer(Interpreter):
 
       content = self.vstContentAux(tree.children[2],"floop"+str(self.typeCount["cycle"]))
       
-      return {"floop"+str(self.typeCount["cycle"]):{"range":range, "content":content}}
+      return {"floop":{"range":range, "content":content}}
     
     def range(self,tree):
       #Its a var and it needs to be type checked
@@ -678,7 +678,7 @@ class analyzer(Interpreter):
       condition = self.visit(tree.children[1])
       content = self.vstContentAux(tree.children[0],"dwloop"+str(self.typeCount["cycle"]))
 
-      return {"dwloop"+str(self.typeCount["cycle"]):{"cond":condition, "content":content}}
+      return {"dwloop":{"cond":condition, "content":content}}
     
     def ifcond(self,tree):
       condition = self.visit(tree.children[0])
