@@ -7,6 +7,9 @@ def html_complete(fname,body):
     return '''
 <!DOCTYPE html>
 <html>
+    <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre-exp.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre-icons.min.css">
     <style>
         /* Remove default bullets */
         ul, #myUL {{
@@ -65,7 +68,6 @@ def html_complete(fname,body):
         }}
         .code {{
             position: relative;
-            display: inline-block;
             margin-left: 10px
         }}
         .warning .errortext  {{
@@ -130,11 +132,31 @@ for (i = 0; i < toggler.length; i++) {
     this.classList.toggle("caret-down");
   });
 } 
-</script>"""+"""</body>
+</script>"""+"""
+<script>
+var slideIndex = 1;
+showDivs(slideIndex);
+
+function plusDivs(n) {
+  showDivs(slideIndex += n);
+}
+
+function showDivs(n) {
+  var i;
+  var x = document.getElementsByClassName("mySlides");
+  if (n > x.length) {slideIndex = 1}
+  if (n < 1) {slideIndex = x.length} ;
+  for (i = 0; i < x.length; i++) {
+    x[i].style.display = "none";
+  }
+  x[slideIndex-1].style.display = "block";
+}</script>
+"""+"""</body>
 </html>"""
 
 def html_func(functions):
     html="""
+    <div style="margin-top: 24px;">
         <h3>Functions Declared</h3>
         <table style="border-collapse: collapse; width: 50%; height: 81px;" border="1">
             <thead>
@@ -148,6 +170,7 @@ def html_func(functions):
                 {tbody}
             </tbody>
         </table>
+        </div>
     """
     tbody=""
     for i in functions.keys():
@@ -162,8 +185,9 @@ def html_func(functions):
 
 def html_variables(variables):
     html="""
+    <div>
         <h3>Variables Used</h3>
-        <table style="border-collapse: collapse; width: 50%; height: 81px;" border="1">
+        <table  class="table table-striped table-hover" style="border-collapse: collapse; width: 70%; height: 81px;" border="1">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -176,6 +200,7 @@ def html_variables(variables):
                 {tbody}
             </tbody>
         </table>
+    </div>
     """
     
     tbody=""
@@ -198,8 +223,8 @@ def prepareVars(declVar:dict):
     return variables
 
 def html_instruc(counter,instructions):
-    html="""
-            <h3> Intructions Used</h3>
+    html="""<div style="margin-top: 24px;">
+            <h3> Instructions Used</h3>
             <p> In total, there were {counter} instructions used!
             <p> In the table bellow, we can see these instructions organized by type:</p>
             <table style="border-collapse: collapse; width: 10%; height: 81px;" border="1">
@@ -213,6 +238,7 @@ def html_instruc(counter,instructions):
                 {tbody}
             </tbody>
         </table>
+        </div>
     """
     tbody=""
     for type in instructions.keys():
@@ -315,12 +341,12 @@ def prepareLabels(data):
     return labels
 
 def html_code(code,labels):
-    html="""<h3>Annotated Code</h3>
-    <pre><div class="code-block"><code>\n"""
+    html="""<div style="margin-top: 24px;"><h3>Annotated Code</h3>
+    <pre class="code" data-lang="python"><div class="code-block"><code>\n"""
     lines = code.split('\n')
     
     for line_num, line in enumerate(lines):
-        html+='<p style="margin-top: -20px;" class="code">'
+        html+='<p style="margin-top: -20px;">'
         if line_num in labels:
             endin ={}
             [].reverse
@@ -334,13 +360,13 @@ def html_code(code,labels):
                     html+='<span class="errortext">'+ errors+ "</span>"    
                     
                     for end in endin[n]:
-                        html+= "</div>"
+                        html+= "</span>"
                     
                     endin.pop(n)
                 
                 if n in labels[line_num]:
                      for each in labels[line_num][n]:
-                        html+='<div class="{level}">'.format(level=each["level"])
+                        html+='<span class="{level}">'.format(level=each["level"])
                         if not each["end"] in endin: endin[each["end"]]=[each]
                         else:endin[each["end"]].append(each)
                 html+=char
@@ -348,35 +374,8 @@ def html_code(code,labels):
         else: html+=line
         html+='</p>\n'
         
-    html+="</code></div></pre>"
+    html+="</code></div></pre></div>"
     return html
-
-def context_builder(context,tree,instr):
-    indexCntxt=0
-    build={}
-    
-    for i in instr:
-        if i != None:
-            name = list(i.keys())[0]
-            if name=="if":
-                if_context=list(tree[context].keys())[indexCntxt]
-            
-                build["if_" + str(if_context)] = context_builder(if_context,tree[context],i[name]["content"])
-                elifn= "elif_" +if_context
-                elsen= "else_" +if_context
-                indexCntxt+=1
-                for elcond in i[name]["elses"]:
-                    nw_context=list(tree[context].keys())[indexCntxt]
-                    if elcond == i[name]["elses"][-1] and "else" in i[name]["elses"][-1]:
-                        build["else_" + nw_context]=context_builder(nw_context,tree[context],i[elcond])[elsen]
-                    else:
-                        build["elif_" + nw_context]=context_builder(nw_context,tree[context],i[elcond])[elifn]
-                    
-                    indexCntxt+=1
-                
-
-
-
 
 def context_builder(context,tree,instr):
     indexCntxt=0
@@ -434,25 +433,48 @@ def html_context(context):
     return html
 
 def html_nested(tree,nested):
-    html="""<h3>Instruction Counter based on Context</h3>"""
+    html="""<div style="margin-top: 24px;"><h3>Instruction Counter based on Context</h3>"""
     html+='<ul id="myUL">\n'
     html+=html_context({"global": context_builder("global",tree,nested)})
-    html+="</ul>"
+    html+="</ul></div>"
 
     return html
 
 def html_analyzerOutput(nested):
-    html="""<h3>Output Code</h3>"""
-    html+="<pre><code>"+json.dumps(nested,indent=2)+"</code></pre>"
+
+    html="""<div style="margin-top: 24px;"><h3>Output Code</h3>"""
+
+    html+="<pre class=\"code\" data-lang=\"JSON\" ><code>"+json.dumps(nested,indent=2)+"</code></pre></div>"
 
     return html
 
+import os
+
+def html_graph():
+    html="""<div style="margin-top: 24px;"><h3>Control Flow Graphs</h3>"""
+
+    for file in os.listdir("doctest-output"):
+        if file.endswith(".png"):
+            html+="""<div class="mySlides">"""
+            html+="""<h4">{file}</h4>""".format(file=file)
+            html+="""<img src="{path}" class="img-fit-contain">""".format(path= os.path.join("/doctest-output", file))
+            html+="""</div>"""
+
+    html+="""<button class="w3-button w3-display-left" onclick="plusDivs(-1)">&#10094;</button>
+            <button class="w3-button w3-display-right" onclick="plusDivs(+1)">&#10095;</button>"""
+    html+="</div>"
+    
+    return html
+
+
 def create_html(input,data):
-    body =html_variables(prepareVars(data["vars"]))
+    body=html_code(input,prepareLabels(data))
+    body+=html_graph()
+    body +=html_variables(prepareVars(data["vars"]))
     body+=html_func(data["functions"])
     body+=html_instruc(data["instr_counter"],data["type_counter"])
     body+=html_nested(data["contextTree"],data["nested"])
-    body+=html_code(input,prepareLabels(data))
+  
     body+=html_analyzerOutput(data["nested"])
     
     return html_complete("",body)
