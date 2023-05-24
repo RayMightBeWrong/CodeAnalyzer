@@ -3,7 +3,7 @@ from grammar import grammar
 from analyzer import analyzer
 from html_creator import create_html
 from lark import Lark
-from genGraphs import genCFG
+from genGraphs import genCFGs
 
 
 def main():
@@ -35,10 +35,15 @@ def main():
     # Open output file
     f = open(args.outputFile,"w")
 
+    # Create the CFG 
+    data["cfg_info"] =genCFGs(data["code"])
+
+
+
     # Compile html
     html =create_html(code,data)
 
-    genCFG(data["code"],"global")
+    
 
     # Write the html code
     f.write(html)

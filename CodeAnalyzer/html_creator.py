@@ -1,7 +1,5 @@
-
-
 import json
-
+import os
 
 def html_complete(fname,body):
     return '''
@@ -115,6 +113,27 @@ def html_complete(fname,body):
         opacity: 1;
         }}
 
+        .collapsible {{
+            color: #444;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+            background-color:  #f1f1f1;
+            }}
+
+
+        /* Style the collapsible content. Note: hidden by default */
+        .content {{
+        padding: 0 18px;
+        display: none;
+        overflow: hidden;
+        background-color: #f1f1f1;
+        }}
+
         </style>
     <head>
         <title> Code Analyzer Report </title>
@@ -132,6 +151,21 @@ for (i = 0; i < toggler.length; i++) {
     this.classList.toggle("caret-down");
   });
 } 
+
+var coll = document.getElementsByClassName("collapsible");
+var i;
+
+for (i = 0; i < coll.length; i++) {
+  coll[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var content = this.nextElementSibling;
+    if (content.style.display === "block") {
+      content.style.display = "none";
+    } else {
+      content.style.display = "block";
+    }
+  });
+}
 </script>"""+"""
 <script>
 var slideIndex = 1;
@@ -156,8 +190,7 @@ function showDivs(n) {
 
 def html_func(functions):
     html="""
-    <div style="margin-top: 24px;">
-        <h3>Functions Declared</h3>
+
         <table style="border-collapse: collapse; width: 50%; height: 81px;" border="1">
             <thead>
                 <tr>
@@ -185,8 +218,6 @@ def html_func(functions):
 
 def html_variables(variables):
     html="""
-    <div>
-        <h3>Variables Used</h3>
         <table  class="table table-striped table-hover" style="border-collapse: collapse; width: 70%; height: 81px;" border="1">
             <thead>
                 <tr>
@@ -200,7 +231,7 @@ def html_variables(variables):
                 {tbody}
             </tbody>
         </table>
-    </div>
+
     """
     
     tbody=""
@@ -223,8 +254,7 @@ def prepareVars(declVar:dict):
     return variables
 
 def html_instruc(counter,instructions):
-    html="""<div style="margin-top: 24px;">
-            <h3> Instructions Used</h3>
+    html="""
             <p> In total, there were {counter} instructions used!
             <p> In the table bellow, we can see these instructions organized by type:</p>
             <table style="border-collapse: collapse; width: 10%; height: 81px;" border="1">
@@ -341,12 +371,13 @@ def prepareLabels(data):
     return labels
 
 def html_code(code,labels):
-    html="""<div style="margin-top: 24px;"><h3>Annotated Code</h3>
+    html="""
+    <h3>Analyzed Code</h3>
     <pre class="code" data-lang="python"><div class="code-block"><code>\n"""
     lines = code.split('\n')
     
     for line_num, line in enumerate(lines):
-        html+='<p style="margin-top: -20px;">'
+        html+='<p style="margin-top: -30px;">'
         if line_num in labels:
             endin ={}
             [].reverse
@@ -374,7 +405,7 @@ def html_code(code,labels):
         else: html+=line
         html+='</p>\n'
         
-    html+="</code></div></pre></div>"
+    html+="</code></div></pre>"
     return html
 
 def context_builder(context,tree,instr):
@@ -433,48 +464,58 @@ def html_context(context):
     return html
 
 def html_nested(tree,nested):
-    html="""<div style="margin-top: 24px;"><h3>Instruction Counter based on Context</h3>"""
-    html+='<ul id="myUL">\n'
+
+    html='<ul id="myUL">\n'
     html+=html_context({"global": context_builder("global",tree,nested)})
-    html+="</ul></div>"
+    html+="</ul>"
 
     return html
 
 def html_analyzerOutput(nested):
-
-    html="""<div style="margin-top: 24px;"><h3>Output Code</h3>"""
-
-    html+="<pre class=\"code\" data-lang=\"JSON\" ><code>"+json.dumps(nested,indent=2)+"</code></pre></div>"
+    html="<pre class=\"code\" data-lang=\"JSON\" ><code>"+json.dumps(nested,indent=2)+"</code></pre>"
 
     return html
 
-import os
-
-def html_graph():
-    html="""<div style="margin-top: 24px;"><h3>Control Flow Graphs</h3>"""
-
-    for file in os.listdir("doctest-output"):
+def html_graph(cfg_info):
+    html=""
+    html+="<h4>Control Flow Graphs</h4>"
+    for file in os.listdir("CFGraphs"):
         if file.endswith(".png"):
+            context = file.replace(".png","")
+            nodes = cfg_info[context]["nodes"]
+            edges = cfg_info[context]["edges"]
             html+="""<div class="mySlides">"""
-            html+="""<h4">{file}</h4>""".format(file=file)
-            html+="""<img src="{path}" class="img-fit-contain">""".format(path= os.path.join("/doctest-output", file))
+            html+="""
+            <span>
+                <button class="w3-button w3-display-left" onclick="plusDivs(-1)">&#10094;</button>
+                {file}
+                <button class="w3-button w3-display-right" onclick="plusDivs(+1)">&#10095;</button></span><p></p>""".format(file=file.replace(".png","") + " context")
+
+            html+="""
+            <p> Were found {nodes} nodes and {edges} edges.</p>
+            <p> The calculated MCabe's complexity equals: {mcabes}</p>""".format(nodes=nodes,edges=edges,mcabes=edges-nodes+2)
+            
+           
+            html+="""<img style="max-height:600px" src="{path}" class="img-fit-contain">""".format(path= os.path.join("CFGraphs", file))
             html+="""</div>"""
 
-    html+="""<button class="w3-button w3-display-left" onclick="plusDivs(-1)">&#10094;</button>
-            <button class="w3-button w3-display-right" onclick="plusDivs(+1)">&#10095;</button>"""
-    html+="</div>"
     
     return html
 
+def collapse(containned,title):
+    html="""<div style="margin-top: 24px;"> <button type="button" class="collapsible"><h3>"""+title+"""</h3></button>"""
+    html+="""<div class="content">"""
+    html +=containned
+    html+="""</div></div>"""
+    return html
 
 def create_html(input,data):
-    body=html_code(input,prepareLabels(data))
-    body+=html_graph()
-    body +=html_variables(prepareVars(data["vars"]))
-    body+=html_func(data["functions"])
-    body+=html_instruc(data["instr_counter"],data["type_counter"])
-    body+=html_nested(data["contextTree"],data["nested"])
-  
-    body+=html_analyzerOutput(data["nested"])
+    body =html_code(input,prepareLabels(data))
+    body+=collapse(html_graph(data["cfg_info"]),"Generated Graphs")
+    body+=collapse(html_variables(prepareVars(data["vars"])),"Variables Used")
+    body+=collapse(html_func(data["functions"]),"Functions Used")
+    body+=collapse(html_instruc(data["instr_counter"],data["type_counter"]),"Instructions Used")
+    body+=collapse(html_nested(data["contextTree"],data["nested"]),"Defined Contexts")
+    body+=collapse(html_analyzerOutput(data["nested"]),"Analyzers Output")
     
     return html_complete("",body)
