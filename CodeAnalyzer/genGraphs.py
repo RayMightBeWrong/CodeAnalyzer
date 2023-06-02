@@ -181,8 +181,5 @@ def genSDG(code, output, func):
 def genSDGs(code):
     global contexts
     contexts = {}
-    for val in code:
-        print('=============================')
-        print(val, end='\n\n')
     genSDG(code, "global", True)
     return contexts
