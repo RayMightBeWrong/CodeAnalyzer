@@ -476,14 +476,14 @@ def html_analyzerOutput(nested):
 
     return html
 
-def html_graph(cfg_info):
+def html_graph(info, graph_name, folder):
     html=""
-    html+="<h4>Control Flow Graphs</h4>"
-    for file in os.listdir("CFGraphs"):
+    html+="<h4>" + graph_name + "</h4>"
+    for file in os.listdir(folder):
         if file.endswith(".png"):
             context = file.replace(".png","")
-            nodes = cfg_info[context]["nodes"]
-            edges = cfg_info[context]["edges"]
+            nodes = info[context]["nodes"]
+            edges = info[context]["edges"]
             html+="""<div class="mySlides">"""
             html+="""
             <span>
@@ -496,9 +496,8 @@ def html_graph(cfg_info):
             <p> The calculated MCabe's complexity equals: {mcabes}</p>""".format(nodes=nodes,edges=edges,mcabes=edges-nodes+2)
             
            
-            html+="""<img style="max-height:600px" src="{path}" class="img-fit-contain">""".format(path= os.path.join("CFGraphs", file))
+            html+="""<img style="max-height:600px" src="{path}" class="img-fit-contain">""".format(path= os.path.join(folder, file))
             html+="""</div>"""
-
     
     return html
 
@@ -511,7 +510,8 @@ def collapse(containned,title):
 
 def create_html(input,data):
     body =html_code(input,prepareLabels(data))
-    body+=collapse(html_graph(data["cfg_info"]),"Generated Graphs")
+    body+=collapse(html_graph(data["cfg_info"], "Control Flow Graphs", "CFGraphs"),"Generated Control Flow Graphs")
+    body+=collapse(html_graph(data["sdg_info"], "System Dependency Graphs", "SDGraphs"),"Generated System Dependency Graphs")
     body+=collapse(html_variables(prepareVars(data["vars"])),"Variables Used")
     body+=collapse(html_func(data["functions"]),"Functions Used")
     body+=collapse(html_instruc(data["instr_counter"],data["type_counter"]),"Instructions Used")
