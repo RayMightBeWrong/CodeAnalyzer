@@ -10,7 +10,11 @@ def genCFGAux(code,begin,end,dot):
         if "dclVar" in statement:
             next+=1
             id = next
-            dot.node(str(id),"declVar")
+            if statement["dclVar"]["decl"]:
+                text = "decl: "
+            else:
+                text = "assign: "
+            dot.node(str(id),text+statement["dclVar"]["name"])
             for i in previous:
                 dot.edge(str(i),str(id))
                 edges+=1
@@ -24,7 +28,7 @@ def genCFGAux(code,begin,end,dot):
                 dot.edge(str(i),str(id))
                 edges+=1
             previous=[id]
-            next,addedEdges = genCFGAux(statement[name]["content"],id,id,dot)
+            next,addedEdges,_ = genCFGAux(statement[name]["content"],id,id,dot)
             edges+=addedEdges
         elif "if" in statement:
             next+=1
@@ -33,9 +37,9 @@ def genCFGAux(code,begin,end,dot):
             for i in previous:
                 dot.edge(str(i),str(id))
                 edges+=1
-            next,addedEdges = genCFGAux(statement["if"]["content"],id,-1,dot)
+            next,addedEdges,previous3 = genCFGAux(statement["if"]["content"],id,-1,dot)
             edges+=addedEdges
-            previous=[next]
+            previous=[]
             previous2=id
             if len(statement["if"]["elses"]) == 0:
                 previous.append(id)
@@ -46,9 +50,8 @@ def genCFGAux(code,begin,end,dot):
                     dot.node(str(id),"elif",shape="diamond")
                     dot.edge(str(previous2),str(id))
                     edges+=1
-                    next,addedEdges = genCFGAux(elseSt["elif"]["content"],id,-1,dot)
+                    next,addedEdges,previous = genCFGAux(elseSt["elif"]["content"],id,-1,dot)
                     edges+=addedEdges
-                    previous.append(next)
                     previous.append(id)
                     previous2=next
                 elif "else" in elseSt:
@@ -57,10 +60,9 @@ def genCFGAux(code,begin,end,dot):
                     dot.node(str(id),"else",shape="diamond")
                     dot.edge(str(previous2),str(id))
                     edges+=1
-                    next,addedEdges = genCFGAux(elseSt["else"]["content"],id,-1,dot)
+                    next,addedEdges,previous = genCFGAux(elseSt["else"]["content"],id,-1,dot)
                     edges+=addedEdges
-                    previous.append(next)
-                    previous.append(id)
+            previous.extend(previous3)
         elif "func" in statement:
             next+=1
             id = next
@@ -78,8 +80,9 @@ def genCFGAux(code,begin,end,dot):
         for i in previous:
             dot.edge(str(i),str(end))
             edges+=1
-
-    return next,edges
+        previous=[]
+    
+    return next,edges,previous
 
                     
 
@@ -87,7 +90,7 @@ def genCFG(code,output):
     dot = graphviz.Digraph()
     dot.node(str(0),"begin",)
     dot.node(str(-2),"end")
-    nodes,edges = genCFGAux(code,0,-2,dot)
+    nodes,edges,_ = genCFGAux(code,0,-2,dot)
     dot.render('CFGraphs/'+output, format="png")
 
     contexts[output]={"nodes":nodes+2,"edges":edges}

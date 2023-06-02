@@ -52,6 +52,7 @@ def html_complete(fname,body):
         .error {{position: relative;
         display: inline-block;
         border-bottom: 1px dotted black;
+        overflow: visible;
         color: red;
         }}
         .warning{{position: relative;
@@ -70,12 +71,12 @@ def html_complete(fname,body):
         }}
         .warning .errortext  {{
             visibility: hidden;
-            width: 350px;
+            width: auto;
             background-color: #555;
             color: #fff;
             text-align: center;
             border-radius: 6px;
-            padding: 5px 0;
+            padding: 5px;
             position: absolute;
             z-index: 1;
             bottom: 125%;
@@ -85,17 +86,16 @@ def html_complete(fname,body):
         }}
         .error .errortext  {{
         visibility: hidden;
-        width: 350px;
+        width: auto;
         background-color: #555;
         color: #fff;
         text-align: center;
         border-radius: 6px;
-        padding: 5px 0;
+        padding: 5px;
         position: absolute;
         z-index: 1;
         bottom: 125%;
         left: 50%;
-        margin-left: -40px;
         opacity: 0;
         transition: opacity 0.3s;
         }}
