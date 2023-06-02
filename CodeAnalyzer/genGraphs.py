@@ -71,6 +71,14 @@ def genCFGAux(code,begin,end,dot):
                 dot.edge(str(i),str(id))
                 edges+=1
             previous=[id]
+        elif "return" in statement:
+            next+=1
+            id = next
+            dot.node(str(id),"return")
+            for i in previous:
+                dot.edge(str(i),str(id))
+                edges+=1
+            previous=[id]
         elif "dclFun" in statement:
            genCFG(statement["dclFun"]["content"],statement["dclFun"]["name"])
 
