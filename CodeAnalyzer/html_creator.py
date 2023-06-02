@@ -168,23 +168,42 @@ for (i = 0; i < coll.length; i++) {
 }
 </script>"""+"""
 <script>
-var slideIndex = 1;
-showDivs(slideIndex);
+var cf = 1;
+var sd = 1;
+showDivsCF(cf);
+showDivsSD(sd);
 
-function plusDivs(n) {
-  showDivs(slideIndex += n);
+function plusDivsCF(n) {
+  showDivsCF(cf += n);
 }
 
-function showDivs(n) {
+function plusDivsSD(n) {
+  showDivsSD(sd += n);
+}
+
+function showDivsCF(n) {
   var i;
-  var x = document.getElementsByClassName("mySlides");
-  if (n > x.length) {slideIndex = 1}
-  if (n < 1) {slideIndex = x.length} ;
+  var x = document.getElementsByClassName("CFGraphs");
+  if (n > x.length) {cf = 1}
+  if (n < 1) {cf = x.length} ;
   for (i = 0; i < x.length; i++) {
     x[i].style.display = "none";
   }
-  x[slideIndex-1].style.display = "block";
-}</script>
+  x[cf-1].style.display = "block";
+}
+
+function showDivsSD(n) {
+  var i;
+  var x = document.getElementsByClassName("SDGraphs");
+  if (n > x.length) {sd = 1}
+  if (n < 1) {sd = x.length} ;
+  for (i = 0; i < x.length; i++) {
+    x[i].style.display = "none";
+  }
+  x[sd-1].style.display = "block";
+}
+
+</script>
 """+"""</body>
 </html>"""
 
@@ -476,7 +495,16 @@ def html_analyzerOutput(nested):
 
     return html
 
-def html_graph(info, graph_name, folder):
+def html_graph(info, graph):
+    if graph == 'cf':
+        graph_name = "Control Flow Graphs"
+        folder = "CFGraphs"
+        plus_function = "plusDivsCF"
+    elif graph == 'sd':
+        graph_name = "System Dependency Graphs"
+        folder = "SDGraphs"
+        plus_function = "plusDivsSD"
+
     html=""
     html+="<h4>" + graph_name + "</h4>"
     for file in os.listdir(folder):
@@ -484,18 +512,17 @@ def html_graph(info, graph_name, folder):
             context = file.replace(".png","")
             nodes = info[context]["nodes"]
             edges = info[context]["edges"]
-            html+="""<div class="mySlides">"""
-            html+="""
+            html+="<div class=\"" + folder + "\">"
+            html+=f"""
             <span>
-                <button class="w3-button w3-display-left" onclick="plusDivs(-1)">&#10094;</button>
+                <button class="w3-button w3-display-left" onclick="{plus_function}(-1)">&#10094;</button>
                 {file}
-                <button class="w3-button w3-display-right" onclick="plusDivs(+1)">&#10095;</button></span><p></p>""".format(file=file.replace(".png","") + " context")
+                <button class="w3-button w3-display-right" onclick="{plus_function}(+1)">&#10095;</button></span><p></p>""".format(file=file.replace(".png","") + " context")
 
             html+="""
             <p> Were found {nodes} nodes and {edges} edges.</p>
             <p> The calculated MCabe's complexity equals: {mcabes}</p>""".format(nodes=nodes,edges=edges,mcabes=edges-nodes+2)
             
-           
             html+="""<img style="max-height:600px" src="{path}" class="img-fit-contain">""".format(path= os.path.join(folder, file))
             html+="""</div>"""
     
@@ -510,8 +537,8 @@ def collapse(containned,title):
 
 def create_html(input,data):
     body =html_code(input,prepareLabels(data))
-    body+=collapse(html_graph(data["cfg_info"], "Control Flow Graphs", "CFGraphs"),"Generated Control Flow Graphs")
-    body+=collapse(html_graph(data["sdg_info"], "System Dependency Graphs", "SDGraphs"),"Generated System Dependency Graphs")
+    body+=collapse(html_graph(data["cfg_info"], 'cf'),"Generated Control Flow Graphs")
+    body+=collapse(html_graph(data["sdg_info"], 'sd'),"Generated System Dependency Graphs")
     body+=collapse(html_variables(prepareVars(data["vars"])),"Variables Used")
     body+=collapse(html_func(data["functions"]),"Functions Used")
     body+=collapse(html_instruc(data["instr_counter"],data["type_counter"]),"Instructions Used")
