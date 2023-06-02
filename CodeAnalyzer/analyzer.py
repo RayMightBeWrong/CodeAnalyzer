@@ -292,15 +292,18 @@ class analyzer(Interpreter):
 
     def declfun(self,tree):
         name =tree.children[0].value
-        args =tree.children[1]
-        args= self.visit(args)
+        if len(tree.children) == 3:
+            args =tree.children[1]
+            args= self.visit(args)
+        else:
+            args=[]
         
         if name in self.declFun:
             self.errors.append({
                   "errorMsg": "Redeclaration of function",
                   "meta": vars(tree.meta)
             })
-        else:     
+        else:
             for arg in args:
                self.declVar[name]={}
                self.declVar[name][arg[1]]= {"type":arg[0],"value":["arg"]}
@@ -310,8 +313,8 @@ class analyzer(Interpreter):
                 "args":args,
                 "retType":[]
             }
-
-            content = self.vstContentAux(tree.children[2],name)
+            content = tree.children[1] if len(tree.children) == 2 else tree.children[2] 
+            content = self.vstContentAux(content,name)
           
         return {"dclFun":{"name":name,"args":args,"content":content}}
    
