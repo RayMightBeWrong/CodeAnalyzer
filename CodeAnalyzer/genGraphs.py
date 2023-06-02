@@ -120,6 +120,7 @@ def genSDGAux(code,begin,end,dot):
             id = next
             dot.node(str(id),"declVar")
             dot.edge(str(begin),str(id))
+            edges += 1
         elif list(statement.keys())[0] in ["floop","wloop","dwloop"]:
             name = list(statement.keys())[0]
             next+=1
@@ -127,7 +128,8 @@ def genSDGAux(code,begin,end,dot):
             dot.node(str(id), name, shape="diamond")
             dot.edge(str(begin),str(id))
             dot.edge(str(id),str(id))
-            genSDGAux(statement[name]['content'],id,end,dot)
+            next, addedEdges = genSDGAux(statement[name]['content'],id,end,dot)
+            edges += addedEdges
         elif "if" in statement:
             name = list(statement.keys())[0]
             next+=1
@@ -140,6 +142,8 @@ def genSDGAux(code,begin,end,dot):
             dot.node(str(id),'then', shape="diamond")
             dot.edge(str(id_if),str(id))
             next, addedEdges = genSDGAux(statement[name]['content'], id, end, dot)
+            edges += 2
+            edges += addedEdges
             for elseSt in statement["if"]["elses"]:
                 if 'else' in elseSt:
                     next+=1
@@ -147,17 +151,22 @@ def genSDGAux(code,begin,end,dot):
                     dot.node(str(id),'else', shape="diamond")
                     dot.edge(str(id_if),str(id))
                     next, addedEdges = genSDGAux(elseSt["else"]["content"], id, -1, dot)
+                    edges += addedEdges
+                    edges += 1
                 elif 'elif' in elseSt:
                     next+=1
                     id = next
                     dot.node(str(id),'elif', shape="diamond")
                     dot.edge(str(id_if),str(id))
                     next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot)
+                    edges += addedEdges
+                    edges += 1
         elif "func" in statement:
             next+=1
             id = next
             dot.node(str(id),"func:"+statement["func"]["name"])
             dot.edge(str(begin),str(id))
+            edges += 1
         elif "dclFun" in statement:
            genSDG(statement["dclFun"]["content"], statement["dclFun"]["name"], True)
         elif "return" in statement:
@@ -165,6 +174,7 @@ def genSDGAux(code,begin,end,dot):
             id = next
             dot.node(str(id),"return")
             dot.edge(str(begin),str(id))
+            edges += 1
 
     return next,edges
 
@@ -176,7 +186,7 @@ def genSDG(code, output, func):
         dot.node(str(0),"entry begin" , shape="trapezium")
     nodes,edges = genSDGAux(code,0,-2,dot)
     dot.render('SDGraphs/'+output, format="png")
-    contexts[output]={"nodes":0,"edges":0}
+    contexts[output]={"nodes":nodes+1,"edges":edges}
 
 def genSDGs(code):
     global contexts
