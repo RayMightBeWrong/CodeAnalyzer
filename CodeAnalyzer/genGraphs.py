@@ -74,7 +74,6 @@ def genCFGAux(code,begin,end,dot):
             previous2 = id
             if statement["switch"]["default"] == {}:
                 previous.append(id)
-
             
             for case in statement["switch"]["cases"]:
                 next+=1
@@ -95,8 +94,7 @@ def genCFGAux(code,begin,end,dot):
                 next,addedEdges,previous3 = genCFGAux(statement["switch"]["default"]["default"]["content"],id,-1,dot)
                 edges+=addedEdges
                 previous.extend(previous3)
-          
-            
+
         
         elif "func" in statement:
             next+=1
@@ -145,7 +143,7 @@ def genCFGs(code):
 
 
 
-def genSDGAux(code,begin,end,dot, ultUnreachable):
+def genSDGAux(code,begin,end,dot, ultUnreachable, inside_loop):
     next = begin
     edges = 0
     afterReturn = False
@@ -168,16 +166,26 @@ def genSDGAux(code,begin,end,dot, ultUnreachable):
         elif list(statement.keys())[0] in ["floop","wloop","dwloop"]:
             name = list(statement.keys())[0]
             next+=1
+            if name != 'floop':
+                reachable = statement[name]['reachable']
+            else:
+                reachable = True
             id = next
             dot.node(str(id), name, shape="diamond")
             if ultUnreachable or afterReturn:
                 dot.edge(str(begin),str(id), color='red')
-                dot.edge(str(id),str(id), color='red')
-                next, addedEdges = genSDGAux(statement[name]['content'],id,end,dot, True)
             else:
                 dot.edge(str(begin),str(id))
+
+            if ultUnreachable or afterReturn:
+                dot.edge(str(id),str(id), color='red')
+                next, addedEdges = genSDGAux(statement[name]['content'],id,end,dot, True, True)
+            elif reachable != False or inside_loop:
                 dot.edge(str(id),str(id))
-                next, addedEdges = genSDGAux(statement[name]['content'],id,end,dot, False)
+                next, addedEdges = genSDGAux(statement[name]['content'],id,end,dot, False, True)
+            else:
+                dot.edge(str(id),str(id), color='red')
+                next, addedEdges = genSDGAux(statement[name]['content'],id,end,dot, True, True)
 
             edges += addedEdges + 2
         elif "if" in statement:
@@ -197,13 +205,13 @@ def genSDGAux(code,begin,end,dot, ultUnreachable):
             reachable = statement["if"]["reachable"]
             if ultUnreachable or afterReturn:
                 dot.edge(str(id_if),str(id), color='red')
-                next, addedEdges = genSDGAux(statement[name]['content'], id, end, dot, True)
-            elif reachable != False:
+                next, addedEdges = genSDGAux(statement[name]['content'], id, end, dot, True, inside_loop)
+            elif reachable != False or inside_loop:
                 dot.edge(str(id_if),str(id))
-                next, addedEdges = genSDGAux(statement[name]['content'], id, end, dot, False)
+                next, addedEdges = genSDGAux(statement[name]['content'], id, end, dot, False, inside_loop)
             else:
                 dot.edge(str(id_if),str(id), color='red')
-                next, addedEdges = genSDGAux(statement[name]['content'], id, end, dot, True)
+                next, addedEdges = genSDGAux(statement[name]['content'], id, end, dot, True, inside_loop)
             
             edges += addedEdges + 2
             for elseSt in statement["if"]["elses"]:
@@ -213,13 +221,13 @@ def genSDGAux(code,begin,end,dot, ultUnreachable):
                     dot.node(str(id),'else', shape="diamond")
                     if afterReturn or ultUnreachable:
                         dot.edge(str(id_if),str(id), color='red')
-                        next, addedEdges = genSDGAux(elseSt["else"]["content"], id, -1, dot, True)
-                    elif reachable == True:
+                        next, addedEdges = genSDGAux(elseSt["else"]["content"], id, -1, dot, True, inside_loop)
+                    elif reachable == True and not inside_loop:
                         dot.edge(str(id_if),str(id), color='red')
-                        next, addedEdges = genSDGAux(elseSt["else"]["content"], id, -1, dot, True)
+                        next, addedEdges = genSDGAux(elseSt["else"]["content"], id, -1, dot, True, inside_loop)
                     else:
                         dot.edge(str(id_if),str(id))
-                        next, addedEdges = genSDGAux(elseSt["else"]["content"], id, -1, dot, False)
+                        next, addedEdges = genSDGAux(elseSt["else"]["content"], id, -1, dot, False, inside_loop)
 
                     edges += addedEdges + 1
                 elif 'elif' in elseSt:
@@ -230,16 +238,16 @@ def genSDGAux(code,begin,end,dot, ultUnreachable):
                     dot.node(str(id),'elif', shape="diamond")
                     if afterReturn or ultUnreachable:
                         dot.edge(str(id_if),str(id), color='red')
-                        next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, True)
-                    elif reachable == True:
+                        next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, True, inside_loop)
+                    elif reachable == True and not inside_loop:
                         dot.edge(str(id_if),str(id), color='red')
-                        next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, True)
-                    elif this_reachable == False:
+                        next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, True, inside_loop)
+                    elif this_reachable == False and not inside_loop:
                         dot.edge(str(id_if),str(id), color='red')
-                        next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, True)
+                        next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, True, inside_loop)
                     else:
                         dot.edge(str(id_if),str(id))
-                        next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, False)
+                        next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, False, inside_loop)
 
                     if reachable != True:       # reachable pode ser False ou 'undefined'
                         if this_reachable == True:
@@ -253,11 +261,8 @@ def genSDGAux(code,begin,end,dot, ultUnreachable):
             dot.node(str(id),"func:"+statement["func"]["name"])
             if afterReturn or ultUnreachable:
                 dot.edge(str(begin),str(id), color='red')
-                next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, True)
             else:
                 dot.edge(str(begin),str(id))
-                next, addedEdges = genSDGAux(elseSt["elif"]["content"], id, -1, dot, False)
-
             edges += 1
         elif "dclFun" in statement:
            genSDG(statement["dclFun"]["content"], statement["dclFun"]["name"], True)
@@ -290,10 +295,10 @@ def genSDGAux(code,begin,end,dot, ultUnreachable):
                 dot.node(str(id),'case', shape="diamond")
                 if afterReturn or ultUnreachable:
                     dot.edge(str(id_switch),str(id), color='red')
-                    next, addedEdges = genSDGAux(caseSt["case"]["content"], id, -1, dot, True)
+                    next, addedEdges = genSDGAux(caseSt["case"]["content"], id, -1, dot, True, inside_loop)
                 else:
                     dot.edge(str(id_switch),str(id))
-                    next, addedEdges = genSDGAux(caseSt["case"]["content"], id, -1, dot, False)
+                    next, addedEdges = genSDGAux(caseSt["case"]["content"], id, -1, dot, False, inside_loop)
                 
                 edges += addedEdges + 1
             if 'default' in statement["switch"]:
@@ -303,10 +308,10 @@ def genSDGAux(code,begin,end,dot, ultUnreachable):
                 dot.node(str(id),'default', shape="diamond")
                 if afterReturn or ultUnreachable:
                     dot.edge(str(id_switch),str(id), color='red')
-                    next, addedEdges = genSDGAux(default["default"]["content"], id, -1, dot, True)
+                    next, addedEdges = genSDGAux(default["default"]["content"], id, -1, dot, True, inside_loop)
                 else:
                     dot.edge(str(id_switch),str(id))
-                    next, addedEdges = genSDGAux(default["default"]["content"], id, -1, dot, False)
+                    next, addedEdges = genSDGAux(default["default"]["content"], id, -1, dot, False, inside_loop)
                 edges += addedEdges + 1
 
     return next,edges
@@ -317,7 +322,7 @@ def genSDG(code, output, func):
         dot.node(str(0),"entry " + output, shape="trapezium")
     else:
         dot.node(str(0),"entry begin" , shape="trapezium")
-    nodes,edges = genSDGAux(code,0,-2,dot, False)
+    nodes,edges = genSDGAux(code,0,-2,dot, False, False)
     dot.render('SDGraphs/'+output, format="png")
     contexts[output]={"nodes":nodes+1,"edges":edges}
 

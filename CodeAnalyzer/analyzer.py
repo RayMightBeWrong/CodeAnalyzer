@@ -49,7 +49,14 @@ def make_arithmetic_calc(val1, cop, val2):
     elif cop == '/':
         return val1 / val2  
     elif cop == '%':
-        return val1 % val2  
+        return val1 % val2
+    
+def make_logic_calc(val1, cop, val2):
+    if cop == 'or':
+        return val1 or val2
+    elif cop == 'and':
+        return val1 and val2
+
 
 def get_actual_value(op):
     while(type(op) == type({})):
@@ -101,43 +108,61 @@ def calculate_opbool(op):
         return op['bool']
     elif 'op_bool' in op:
         op = op['op_bool']
-        possible_to_calc = True
-        attrs = ['int', 'string', 'var', 'bool']
+        if len(op) == 3:
+            possible_to_calc = True
+            attrs = ['int', 'string', 'var', 'bool']
 
-        found1 = False
-        alreadyCalc1 = False
-        found2 = False
-        alreadyCalc2 = False
-        if 'op_int' in op[0]:
-            found1, op1 = calculate_opint(op[0])
-            alreadyCalc1 = found1
-            if op1 == 'invalid operation':
-                alreadyCalc1 = False
-                found1 = False
-        if 'op_int' in op[2]:
-            found2, op2 = calculate_opint(op[2])
-            alreadyCalc2 = found2
-            if op2 == 'invalid operation':
-                alreadyCalc2 = False
-                found2 = False
+            found1 = False
+            alreadyCalc1 = False
+            found2 = False
+            alreadyCalc2 = False
+            if 'op_int' in op[0]:
+                found1, op1 = calculate_opint(op[0])
+                alreadyCalc1 = found1
+                if op1 == 'invalid operation':
+                    alreadyCalc1 = False
+                    found1 = False
+            if 'op_int' in op[2]:
+                found2, op2 = calculate_opint(op[2])
+                alreadyCalc2 = found2
+                if op2 == 'invalid operation':
+                    alreadyCalc2 = False
+                    found2 = False
 
-        for attr in attrs:
-            if attr in op[0]:
-                found1 = True
-            if attr in op[2]:
-                found2 = True
+            if not found1 and 'op_bool' in op[0]:
+                op1 = calculate_opbool(op[0])
+                if op1 != 'undefined':
+                    found1 = True
+                    alreadyCalc1 = found1
+            if 'op_bool' in op[2]:
+                op1 = calculate_opbool(op[0])
+                if op1 != 'undefined':
+                    found1 = True
+                    alreadyCalc1 = found1
+
+            for attr in attrs:
+                if attr in op[0]:
+                    found1 = True
+                if attr in op[2]:
+                    found2 = True
             
-        if found1 == False or found2 == False:
-            possible_to_calc = False
+            if found1 == False or found2 == False:
+                possible_to_calc = False
 
-        if possible_to_calc:
-            if alreadyCalc1 == False:
-                op1 = get_actual_value(op[0])
-            if alreadyCalc2 == False:
-                op2 = get_actual_value(op[2])
-            if type(op1) != type({}) and type(op2) != type({}):
-                return make_comparison(op1, op[1], op2)
-        return 'undefined'
+            if possible_to_calc:
+                if alreadyCalc1 == False:
+                    op1 = get_actual_value(op[0])
+                if alreadyCalc2 == False:
+                    op2 = get_actual_value(op[2])
+                if type(op1) != type({}) and type(op2) != type({}):
+                    if op[1] not in ['or', 'and']:
+                        return make_comparison(op1, op[1], op2)
+                    else:
+                        return make_logic_calc(op1, op[1], op2)
+            return 'undefined'
+        elif len(op) == 2:
+            return not calculate_opbool(op[1])
+
 
 
 class analyzer(Interpreter):
@@ -664,8 +689,9 @@ class analyzer(Interpreter):
     def whileloop(self,tree):
       self.typeCount["cycle"]+=1
       condition = self.visit(tree.children[0])
+      reachable = calculate_opbool(condition)
       content = self.vstContentAux(tree.children[1], "wloop"+str(self.typeCount["cycle"]))
-      return {"wloop":{"cond":condition, "content":content}}
+      return {"wloop":{"cond":condition, "content":content, "reachable": reachable}}
       
     def forloop(self,tree):
       self.typeCount["cycle"]+=1
@@ -779,9 +805,10 @@ class analyzer(Interpreter):
     def dowhile(self,tree):
       self.typeCount["cycle"]+=1
       condition = self.visit(tree.children[1])
+      reachable = calculate_opbool(condition)
       content = self.vstContentAux(tree.children[0],"dwloop"+str(self.typeCount["cycle"]))
 
-      return {"dwloop":{"cond":condition, "content":content}}
+      return {"dwloop":{"cond":condition, "content":content, "reachable": reachable}}
     
     def ifcond(self,tree):
       condition = self.visit(tree.children[0])
@@ -876,7 +903,7 @@ class analyzer(Interpreter):
          cases.append(self.visit(tree.children[-1]))
       else:
          default=self.visit(tree.children[-1])
-      
+
       return {"switch":{"var":var,"cases":cases,"default":default}}       
 
     def case(self,tree):
