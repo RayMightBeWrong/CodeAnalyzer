@@ -522,6 +522,8 @@ def html_graph(info, graph):
             html+="""
             <p> Were found {nodes} nodes and {edges} edges.</p>
             <p> The calculated MCabe's complexity equals: {mcabes}</p>""".format(nodes=nodes,edges=edges,mcabes=edges-nodes+2)
+            if graph == 'sd':
+                html += "<p>Edges colored red signify unreachable code.</p>" 
             
             html+="""<img style="max-height:600px" src="{path}" class="img-fit-contain">""".format(path= os.path.join(folder, file))
             html+="""</div>"""

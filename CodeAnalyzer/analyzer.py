@@ -38,6 +38,106 @@ def make_comparison(val1, cop, val2):
         return val1 == val2
     elif cop == '!=':
         return val1 != val2
+    
+def make_arithmetic_calc(val1, cop, val2):
+    if cop == '+':
+        return val1 + val2
+    elif cop == '-':
+        return val1 - val2
+    elif cop == '*':
+        return val1 * val2  
+    elif cop == '/':
+        return val1 / val2  
+    elif cop == '%':
+        return val1 % val2  
+
+def get_actual_value(op):
+    while(type(op) == type({})):
+        if 'var' in op:
+            op = op['var']['value']
+        elif 'int' in op:
+            op = op['int']
+        elif 'string' in op:
+            op = op['string']
+        elif 'bool' in op:
+            op = op['bool']
+        else:
+            break
+
+    return op
+
+def calculate_opint(op):
+    if 'int' in op:
+        return True, op['int']
+    elif 'op_int' in op:
+        not_possible = False
+
+        op = op['op_int']
+        if 'var' in op[0] or 'int' in op[0]:
+            op1 = get_actual_value(op[0])
+        elif 'op_int':
+            _, op1 = calculate_opint(op[0])
+        else:
+            not_possible = True
+
+        if 'var' in op[2] or 'int' in op[2]:
+            op2 = get_actual_value(op[2])
+        elif 'op_int':
+            _, op2 = calculate_opint(op[2])
+        else:
+            not_possible = True
+
+        if not_possible:
+            return False, op
+        else:
+            if (type(op1) == type(1) or type(op1) == type(1.1)) and (type(op2) == type(1) or type(op2) == type(1.1)):
+                return True, make_arithmetic_calc(op1, op[1], op2)
+            else:
+                return True, 'invalid operation'
+
+
+def calculate_opbool(op):
+    if 'bool' in op:
+        return op['bool']
+    elif 'op_bool' in op:
+        op = op['op_bool']
+        possible_to_calc = True
+        attrs = ['int', 'string', 'var', 'bool']
+
+        found1 = False
+        alreadyCalc1 = False
+        found2 = False
+        alreadyCalc2 = False
+        if 'op_int' in op[0]:
+            found1, op1 = calculate_opint(op[0])
+            alreadyCalc1 = found1
+            if op1 == 'invalid operation':
+                alreadyCalc1 = False
+                found1 = False
+        if 'op_int' in op[2]:
+            found2, op2 = calculate_opint(op[2])
+            alreadyCalc2 = found2
+            if op2 == 'invalid operation':
+                alreadyCalc2 = False
+                found2 = False
+
+        for attr in attrs:
+            if attr in op[0]:
+                found1 = True
+            if attr in op[2]:
+                found2 = True
+            
+        if found1 == False or found2 == False:
+            possible_to_calc = False
+
+        if possible_to_calc:
+            if alreadyCalc1 == False:
+                op1 = get_actual_value(op[0])
+            if alreadyCalc2 == False:
+                op2 = get_actual_value(op[2])
+            if type(op1) != type({}) and type(op2) != type({}):
+                return make_comparison(op1, op[1], op2)
+        return 'undefined'
 
 
 class analyzer(Interpreter):
@@ -687,6 +787,8 @@ class analyzer(Interpreter):
       condition = self.visit(tree.children[0])
       content = self.vstContentAux(tree.children[1],"if"+str(self.typeCount["cond"]))
       elses=[]
+
+      reachable = calculate_opbool(condition)
       for i in range(2,len(tree.children)):
            elses.append(self.visit(tree.children[i]))
 
@@ -694,23 +796,24 @@ class analyzer(Interpreter):
       for i in possible:
           self.warnings.append({"errorMsg":"Might be able to merge nested if", "meta":i})
       
-      return {"if":{"cond":condition, "content":content, "elses":elses, "meta":vars(tree.children[0].meta)}}
+      return {"if":{"cond":condition, "content":content, "reachable": reachable, "elses":elses, "meta":vars(tree.children[0].meta)}}
     
     def nestedIfCond(self,content,condition):
         changedVars = []
         metas = []
-        fstcondVars = self.extractVariables(condition["op_bool"])
-        for elem in content:
-            if self.getType(elem) == "if" and len(elem["if"]["elses"])==0:
-                condVars = self.extractVariables(elem["if"]["cond"]["op_bool"])
-                for i in condVars:
-                    if i in changedVars or i in fstcondVars: flag=False
-                    else: metas.append(elem["if"]["meta"])
+        if 'op_bool' in condition:
+            fstcondVars = self.extractVariables(condition["op_bool"])
+            for elem in content:
+                if self.getType(elem) == "if" and len(elem["if"]["elses"])==0:
+                    condVars = self.extractVariables(elem["if"]["cond"]["op_bool"])
+                    for i in condVars:
+                        if i in changedVars or i in fstcondVars: flag=False
+                        else: metas.append(elem["if"]["meta"])
 
-            elif self.getType(elem) == "dclVar":
-                
-                if not elem["dclVar"]["decl"] and elem["dclVar"]["assign"]:
-                    changedVars.append(elem["dclVar"]["name"])
+                elif self.getType(elem) == "dclVar":
+
+                    if not elem["dclVar"]["decl"] and elem["dclVar"]["assign"]:
+                        changedVars.append(elem["dclVar"]["name"])
 
         return metas
 
@@ -743,13 +846,14 @@ class analyzer(Interpreter):
 
     def elifcond(self,tree):
       condition = self.visit(tree.children[0])
+      reachable = calculate_opbool(condition)
       content = self.vstContentAux(tree.children[1],"elif"+str(self.typeCount["cond"]))
       
       possible = self.nestedIfCond(content,condition)
       for i in possible:
           self.warnings.append({"errorMsg":"Might be able to merge nested if", "meta":i})
       
-      return {"elif":{"cond":condition, "content":content}}
+      return {"elif":{"cond":condition, "reachable": reachable, "content":content}}
 
     def elsecond(self,tree):
       content = self.vstContentAux(tree.children[0],"else"+str(self.typeCount["cond"]))
