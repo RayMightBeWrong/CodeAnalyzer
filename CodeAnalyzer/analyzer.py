@@ -769,7 +769,6 @@ class analyzer(Interpreter):
 
       default={}
       if (tree.children[-1].data == "case"):
-         
          cases.append(self.visit(tree.children[-1]))
       else:
          default=self.visit(tree.children[-1])
@@ -778,6 +777,7 @@ class analyzer(Interpreter):
 
     def case(self,tree):
       expression = self.visit(tree.children[0])
+      self.typeCount["cond"]+=1
       content= self.vstContentAux(tree.children[1],"casecond"+str(self.typeCount["cond"]))
       return {"case":{"expression":expression, "content":content}}
     

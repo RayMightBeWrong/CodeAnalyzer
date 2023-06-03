@@ -63,6 +63,41 @@ def genCFGAux(code,begin,end,dot):
                     next,addedEdges,previous = genCFGAux(elseSt["else"]["content"],id,-1,dot)
                     edges+=addedEdges
             previous.extend(previous3)
+        elif "switch" in statement:
+            next+=1
+            id = next
+            dot.node(str(id),"switch",shape="diamond")
+            for i in previous:
+                dot.edge(str(i),str(id))
+                edges+=1
+            previous=[]
+            previous2 = id
+            if statement["switch"]["default"] == {}:
+                previous.append(id)
+
+            
+            for case in statement["switch"]["cases"]:
+                next+=1
+                id = next
+                dot.node(str(id),"case",shape="diamond")
+                dot.edge(str(previous2),str(id))
+                edges+=1
+                next,addedEdges,previous3 = genCFGAux(case["case"]["content"],id,-1,dot)
+                edges+=addedEdges
+                previous.extend(previous3)
+
+            if statement["switch"]["default"] != {}:
+                next+=1
+                id = next
+                dot.node(str(id),"default",shape="diamond")
+                dot.edge(str(previous2),str(id))
+                edges+=1
+                next,addedEdges,previous3 = genCFGAux(statement["switch"]["default"]["default"]["content"],id,-1,dot)
+                edges+=addedEdges
+                previous.extend(previous3)
+          
+            
+        
         elif "func" in statement:
             next+=1
             id = next

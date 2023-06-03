@@ -434,9 +434,10 @@ def context_builder(context,tree,instr):
                 nw_context=list(tree[context].keys())[indexCntxt]
                 build[name+"_" + list(tree[context].keys())[indexCntxt]]=context_builder(context,tree,i[name]["cases"])
                 indexCntxt+=1
-                nw_context=list(tree[context].keys())[indexCntxt]
-                build[name+"_" + list(tree[context].keys())[indexCntxt]]=context_builder(context,tree,[i[name]["default"]])
-                indexCntxt+=1
+                if i[name]["default"] != {}:
+                    nw_context=list(tree[context].keys())[indexCntxt]
+                    build[name+"_" + list(tree[context].keys())[indexCntxt]]=context_builder(context,tree,[i[name]["default"]])
+                    indexCntxt+=1
             
             elif not isinstance(i[name],dict):
                 if not name in build: build[name]=0
