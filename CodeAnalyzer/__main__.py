@@ -3,7 +3,7 @@ from grammar import grammar
 from analyzer import analyzer
 from html_creator import create_html
 from lark import Lark
-from genGraphs import genCFGs
+from genGraphs import genCFGs, genSDGs
 
 
 def main():
@@ -30,6 +30,9 @@ def main():
     dir = 'CFGraphs/'
     for f in os.listdir(dir):
         os.remove(os.path.join(dir, f))
+    dir = 'SDGraphs/'
+    for f in os.listdir(dir):
+        os.remove(os.path.join(dir, f))
 
 
 
@@ -43,6 +46,7 @@ def main():
 
     # Create the CFG 
     data["cfg_info"] =genCFGs(data["code"])
+    data["sdg_info"] =genSDGs(data["code"])
 
 
 
