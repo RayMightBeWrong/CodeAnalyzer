@@ -520,9 +520,10 @@ def html_graph(info, graph):
                 {file}
                 <button class="w3-button w3-display-right" onclick="{plus_function}(+1)">&#10095;</button></span><p></p>""".format(file=file.replace(".png","") + " context")
 
-            html+="""
-            <p> Were found {nodes} nodes and {edges} edges.</p>
-            <p> The calculated MCabe's complexity equals: {mcabes}</p>""".format(nodes=nodes,edges=edges,mcabes=edges-nodes+2)
+            if graph == 'cf':
+                html+="""
+                <p> Were found {nodes} nodes and {edges} edges.</p>
+                <p> The calculated MCabe's complexity equals: {mcabes}</p>""".format(nodes=nodes,edges=edges,mcabes=edges-nodes+2)
             if graph == 'sd':
                 html += "<p>Edges colored red signify unreachable code.</p>" 
             
