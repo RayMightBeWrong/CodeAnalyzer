@@ -1,0 +1,28 @@
+def clock(){
+    int i = 0;
+    switch i
+        case 0{
+            write(i,"STDOUT");
+        }
+        case 1{
+            write(i,"STDOUT");
+        }
+        default {
+            write(i,"STDOUT");
+        }
+}
+
+def stupid(){
+    for i in [1 -> 10] {
+      switch i
+        case 0{
+            write("-1","STDOUT");
+        }
+        case 1{
+            write("0","STDOUT");
+        }
+        default {
+            write(i,"STDOUT");
+        }
+    }   
+}

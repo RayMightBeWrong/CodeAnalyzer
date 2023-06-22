@@ -12,6 +12,7 @@ bool k = arrayBool[4];
 
 def foo(int l){
     for i in [1 -> 10] {
+
         if (i < global_i) {
             write("foo","STDOUT");
         }
@@ -26,5 +27,6 @@ def foo(int l){
         }
     } 
     return l;
+    
 }
 int x = foo(10);

@@ -154,7 +154,7 @@ def calculate_opbool(op):
                     op1 = get_actual_value(op[0])
                 if alreadyCalc2 == False:
                     op2 = get_actual_value(op[2])
-                if type(op1) != type({}) and type(op2) != type({}) and (op1 != 'arg' and op2 != 'arg'):
+                if type(op1) != type({}) and type(op2) != type({}):
                     if op[1] not in ['or', 'and']:
                         return make_comparison(op1, op[1], op2)
                     else:

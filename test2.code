@@ -1,9 +1,32 @@
-int i = 0;
-while (i < 15){
-    if (i%2 == 0){
-        write(i,STDOUT);
-    }
-    else {
-        write(i-1,STDOUT);
+def clock(){
+    int time = 0;
+    while(true){
+        if (time % 2 == 0){
+            write("Tic\n","STDOUT");
+        }
+        else{
+            write("Tac\n","STDOUT");
+        }
+        time = time + 1;
     }
 }
+
+def stupid(){
+    int i = 0;
+      switch i
+        case 0{
+            write("-1","STDOUT");
+            return i;
+        }
+        case 1{
+            write("0","STDOUT");
+            return i+1;
+        }
+        default {
+            write(i,"STDOUT");
+            return i+2;
+        }
+     
+}
+
+
